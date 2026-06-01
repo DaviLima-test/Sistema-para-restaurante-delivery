@@ -1,13 +1,14 @@
+/*
 package view;
 
 import java.awt.*;
 import java.io.File;
 import javax.swing.*;
 
-public class MenuPrincipal extends JFrame {
+public class TelaPrincipal extends JFrame {
     private JPanel contentPane;
 
-    public MenuPrincipal() {
+    public TelaPrincipal() {
         setTitle("Sistema de Gestão de Delivery");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setBounds(100, 100, 850, 600); 
@@ -105,16 +106,7 @@ public class MenuPrincipal extends JFrame {
         });
         
         contentPane.add(btn);
-    }    
-
-    public static void main(String[] args) {
-        EventQueue.invokeLater(() -> {
-            try {
-                MenuPrincipal frame = new MenuPrincipal();
-                frame.setVisible(true);
-            } catch (Exception e) { 
-                e.printStackTrace(); 
-            }
-        });
     }
 }
+
+ */

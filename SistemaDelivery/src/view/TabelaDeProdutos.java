@@ -1,3 +1,4 @@
+/*
 package view;
 
 import java.awt.*;
@@ -149,3 +150,5 @@ public class TabelaDeProdutos extends JFrame {
         }
     }
 }
+
+ */

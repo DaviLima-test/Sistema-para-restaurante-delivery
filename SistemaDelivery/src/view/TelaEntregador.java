@@ -1,3 +1,4 @@
+/*
 package view;
 
 import java.awt.*;
@@ -131,3 +132,5 @@ public class TelaEntregador extends JFrame {
         }
     }
 }
+
+ */

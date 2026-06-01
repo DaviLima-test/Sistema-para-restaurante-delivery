@@ -1,5 +1,6 @@
 package model;
 
+import java.util.prefs.Preferences;
 public class Login {
     protected String Email;
     protected String Senha;

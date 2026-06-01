@@ -1,3 +1,4 @@
+/*
 package view;
 
 import javax.swing.*;
@@ -143,3 +144,5 @@ public class TelaPedido extends JFrame {
         return campo;
     }
 }
+
+ */

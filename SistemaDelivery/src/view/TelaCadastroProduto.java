@@ -1,3 +1,4 @@
+/*
 package view;
 
 import java.awt.*;
@@ -123,3 +124,5 @@ public class TelaCadastroProduto extends JFrame {
         }
     }
 }
+
+ */

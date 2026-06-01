@@ -1,3 +1,4 @@
+/*
 package view;
 
 import java.awt.*;
@@ -130,3 +131,5 @@ public class TabelaDePedidos extends JFrame {
 	    }
 	}
 }
+
+ */
