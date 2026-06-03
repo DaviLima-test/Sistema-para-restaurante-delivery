@@ -3,12 +3,12 @@
   <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_11" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/SistemaDelivery/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="com.miglayout.swing_11.4.2" level="project" />
     <orderEntry type="library" name="com.miglayout.core_11.4.2" level="project" />
+    <orderEntry type="library" name="com.miglayout.swing_11.4.2" level="project" />
     <orderEntry type="library" name="mysql-connector-j-8.0.33" level="project" />
   </component>
 </module>

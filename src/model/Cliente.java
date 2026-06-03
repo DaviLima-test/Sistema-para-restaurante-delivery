@@ -5,7 +5,7 @@ public class Cliente extends Login {
     private int Estrelas;
 
     public Cliente(String email, String senha, String user, String cartao) {
-        super(email, senha, user);
+        super(email, senha, user );
         this.Cartao = cartao;
         this.Estrelas = 5; // Padrão inicial
     }

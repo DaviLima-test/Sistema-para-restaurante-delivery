@@ -1,17 +1,16 @@
-import repositorio.SessaoBanco;
 //import view.TelaPrincipal;
 import view.TelaInicial;
-
+import model.Login;
 import java.awt.*;
 
 public class Main {
     public static void main(String[] args) {
         EventQueue.invokeLater(() -> {
             try {
-        SessaoBanco.inicializarBanco();
+        Login.inicializarBanco();
 
         // 2. Verifica o "cookie" no banco de dados SQLite
-        boolean usuarioJaLogou = SessaoBanco.verificarSeEstaLogado();
+        boolean usuarioJaLogou = Login.verificarSeEstaLogado();
 
         if (usuarioJaLogou) {
             // Se o banco disser que está logado, pula a TelaInicio e vai direto pro App
