@@ -5,8 +5,10 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.io.File;
+import java.net.URL;
 
-public abstract class Telabase extends JFrame {
+public class Telabase extends JFrame {
     protected static int Width;
     protected static int Height;
     private int raioDoArredondamento;
@@ -18,11 +20,34 @@ public abstract class Telabase extends JFrame {
         Width = Toolkit.getDefaultToolkit().getScreenSize().width;
         Height = Toolkit.getDefaultToolkit().getScreenSize().height;
         setSize(Width,Height);
+        try {
+
+           File arquivoIcone = new File("img/AIFome.png");
+
+            if (arquivoIcone.exists()) {
+
+                Image icone = new ImageIcon("img/AIFome.png").getImage();
+
+                // Aplica o ícone na janela principal
+                this.setIconImage(icone);
+            } else {
+                System.err.println("Erro: O arquivo de ícone não foi encontrado no caminho especificado.");
+            }
+        } catch (Exception e) {
+            System.err.println("Não foi possível carregar o ícone da aplicação: " + e.getMessage());
+        }
+
     }
     public void configuraTela(JPanel panel){
-        setContentPane(panel);
-        setVisible(true);
+
+        getContentPane().removeAll();
+        getContentPane().add(panel);
+        revalidate();
+        repaint();
+
     }
+
+
     public void configuraBotao(JButton botao , Color cor){
 
         botao.setBackground(cor); // Vermelho
@@ -264,5 +289,57 @@ class CheckboxCustomizado extends JCheckBox {
 
         g2.dispose();
         super.paintComponent(g);
+    }
+}
+class CardRestaurante extends JPanel {
+
+    public CardRestaurante(String nome, String nota, String tempo, String frete) {
+        setLayout(new BorderLayout(15, 0));
+        setBackground(Color.WHITE);
+        setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // Define uma altura fixa para o card e largura flexível
+        setPreferredSize(new Dimension(320, 80)); // Largura fixa de 320px para caber vários na tela lateralmente
+        setMaximumSize(new Dimension(320, 80));
+
+        // Borda suave ao redor do card para parecer um bloco separado
+        setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(240, 240, 240), 1, true),
+                BorderFactory.createEmptyBorder(10, 15, 10, 15)
+        ));
+
+        // 1. "FOTO" DO RESTAURANTE (Substituída por um quadrado cinza arredondado/ícone)
+        JPanel fotoPlaceholder = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(230, 230, 230));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15); // Círculo/Quadrado suave
+                g2.dispose();
+            }
+        };
+        fotoPlaceholder.setPreferredSize(new Dimension(60, 60));
+        add(fotoPlaceholder, BorderLayout.WEST);
+
+        // 2. INFORMAÇÕES (Nome, Nota, Tempo)
+        JPanel infos = new JPanel(new GridLayout(2, 1, 0, 5));
+        infos.setOpaque(false);
+
+        JLabel lblNome = new JLabel(nome);
+        lblNome.setFont(new Font("Arial", Font.BOLD, 16));
+
+        // Detalhes em cinza (Nota, Tempo, Frete) igual ao app
+        JLabel lblDetalhes = new JLabel("⭐ " + nota + " • " + tempo + " • " + frete);
+        lblDetalhes.setFont(new Font("Arial", Font.PLAIN, 13));
+        lblDetalhes.setForeground(Color.GRAY);
+
+        infos.add(lblNome);
+        infos.add(lblDetalhes);
+
+        add(infos, BorderLayout.CENTER);
+
+        // Transforma o card todo em um botão clicável visualmente
+        setCursor(new Cursor(Cursor.HAND_CURSOR));
     }
 }

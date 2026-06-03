@@ -25,7 +25,35 @@ public class Login {
     }
 
     public String GetUser() {
-        return this.User;
+        if(User.isEmpty()) {
+            if (Email.isEmpty() || Senha.isEmpty()) {
+                System.out.println("Nao ha como requerir pois alguma das variáveis está sem o ngc");
+                return null;
+            } else {
+                String sqlBuscar = "SELECT nome FROM usuarios WHERE email = ? AND senha = ?;";
+
+                try (Connection conn = obterConexao();
+                     PreparedStatement pstmt = conn.prepareStatement(sqlBuscar)) {
+
+                    pstmt.setString(1, Email);
+                    pstmt.setString(2, Senha);
+
+                    try (ResultSet rs = pstmt.executeQuery()) {
+                        if (rs.next()) {
+                            // Se encontrou o usuário, pega o nome dele do banco
+                            String nomeUsuario = rs.getString("nome");
+                            return nomeUsuario;
+                        }
+                    }
+                } catch (SQLException e) {
+                    System.err.println("Erro ao realizar login no MySQL: " + e.getMessage());
+                    return null;
+                }
+            }
+        }else{
+            return User;
+        }
+        return null;
     }
 
     public String MudarSenha() {

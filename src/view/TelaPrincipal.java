@@ -1,112 +1,281 @@
-/*
+
 package view;
 
 import java.awt.*;
 import java.io.File;
 import javax.swing.*;
 
-public class TelaPrincipal extends JFrame {
-    private JPanel contentPane;
+public class TelaPrincipal extends JPanel {
+    JPanel conteudoInterno;
 
     public TelaPrincipal() {
-        setTitle("Sistema de Gestão de Delivery");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setBounds(100, 100, 850, 600); 
-        setLocationRelativeTo(null); 
-        
-        contentPane = new JPanel();
-        contentPane.setBackground(Color.WHITE);
-        contentPane.setLayout(null);
-        setContentPane(contentPane);
 
-        // Painel Lateral para Banner
-        JPanel painelEsquerda = new JPanel();
-        painelEsquerda.setBounds(0, 0, 380, 600); 
-        painelEsquerda.setLayout(null);
-        painelEsquerda.setBackground(new Color(234, 29, 44)); 
-        contentPane.add(painelEsquerda);
 
-        // Tenta carregar a imagem do banner
-        try {
-            File arqBanner = new File("img/banner_delivery.jpg"); 
-            if (arqBanner.exists()) {
-                ImageIcon iconOriginal = new ImageIcon(arqBanner.getAbsolutePath());
-                Image imgRedim = iconOriginal.getImage().getScaledInstance(380, 600, Image.SCALE_SMOOTH);
-                JLabel lblImagemLateral = new JLabel(new ImageIcon(imgRedim));
-                lblImagemLateral.setBounds(0, 0, 380, 600);
-                painelEsquerda.add(lblImagemLateral);
-            }
-        } catch (Exception e) {
-            System.out.println("Banner não carregado.");
-        }
+        setLayout(new BorderLayout());
+        setBackground(Color.WHITE);
 
-        // Títulos da Área de Operação
-        JLabel lblTitulo = new JLabel("GERENCIADOR DE PEDIDOS");
-        lblTitulo.setForeground(new Color(30, 30, 30)); 
-        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 26));
-        lblTitulo.setHorizontalAlignment(SwingConstants.CENTER);
-        lblTitulo.setBounds(420, 50, 380, 40);
-        contentPane.add(lblTitulo);
 
-        JLabel lblSubtitulo = new JLabel("Controle Administrativo");
-        lblSubtitulo.setForeground(new Color(100, 100, 100));
-        lblSubtitulo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        lblSubtitulo.setHorizontalAlignment(SwingConstants.CENTER);
-        lblSubtitulo.setBounds(420, 90, 380, 20);
-        contentPane.add(lblSubtitulo);
+        JPanel header = criarHeader();
+        add(header, BorderLayout.NORTH);
 
-        // Botões do Sistema
-        adicionarBotao("Cadastrar Produto", 160, e -> new TelaCadastroProduto().setVisible(true));
-        
-        adicionarBotao("Visualizar Cardápio", 230, e -> {
-            TabelaDeProdutos tela = new TabelaDeProdutos();
-            tela.atualizarTabela(""); 
-            tela.setVisible(true);
-        });
 
-        adicionarBotao("Lançar Novo Pedido", 300, e -> new TelaPedido().setVisible(true));
-        
-        adicionarBotao("Relatórios Gerenciais", 370, e -> {
-            TabelaDePedidos tela = new TabelaDePedidos();
-            tela.atualizarTabela();
-            tela.setVisible(true);
-        });
+        conteudoInterno = new JPanel();
+        // Mudamos para GridBagLayout aqui para termos controle total das linhas
 
-        adicionarBotao("Logística de Entrega", 440, e -> new TelaEntregador().setVisible(true));
+        conteudoInterno.setLayout(new GridBagLayout());
+        conteudoInterno.setBackground(Color.WHITE);
+        conteudoInterno.setBorder(BorderFactory.createEmptyBorder(20, 40, 20, 40));
 
-        // Rodapé Informativo
-        JLabel lblInfo = new JLabel("Sistema Desenvolvido para Gestão Interna");
-        lblInfo.setForeground(new Color(150, 150, 150));
-        lblInfo.setFont(new Font("Segoe UI", Font.PLAIN, 10));
-        lblInfo.setBounds(420, 530, 380, 20);
-        lblInfo.setHorizontalAlignment(SwingConstants.CENTER);
-        contentPane.add(lblInfo);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        gbc.anchor = GridBagConstraints.NORTHWEST; // Força os componentes a nascerem no Topo-Esquerda
+
+        // Linha 0: Seção de Categorias
+        gbc.gridy = 0;
+        gbc.weighty = 0.0; // Zera o peso para não empurrar para baixo
+        gbc.insets = new Insets(0, 0, 25, 0); // Margem de 25px abaixo das categorias
+        conteudoInterno.add(criarSecaoCategorias(), gbc);
+
+        // Linha 1: Lista de Restaurantes
+        gbc.gridy = 1;
+        gbc.weighty = 0.0; // Mantém em zero
+        gbc.insets = new Insets(0, 0, 0, 0);
+        conteudoInterno.add(criarListaRestaurantes(), gbc);
+
+        // -------------------------------------------------------------
+        // O SEGREDO: Linha 2 é a "Mola" que puxa tudo o que está acima para o topo
+        // -------------------------------------------------------------
+        gbc.gridy = 2;
+        gbc.weighty = 1.0; // Sugará todo o espaço em branco vertical do fundo da tela
+        JPanel molaInvisivel = new JPanel();
+        molaInvisivel.setOpaque(false);
+        conteudoInterno.add(molaInvisivel, gbc);
+
+        // Criando o scroll principal do Feed
+        JScrollPane scroll = new JScrollPane(conteudoInterno);
+
+
+        scroll.setBorder(null);
+
+
+        scroll.getVerticalScrollBar().setUnitIncrement(30);
+        scroll.getHorizontalScrollBar().setUnitIncrement(18);
+        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+
+
+        scroll.setOpaque(false);
+        scroll.getViewport().setOpaque(false);
+
+        add(scroll, BorderLayout.CENTER);
+
     }
 
     // Método para criar botões com o mesmo padrão visual
+    /*
     private void adicionarBotao(String texto, int y, java.awt.event.ActionListener acao) {
-        JButton btn = new JButton(texto);
+        BotaoArredondado() btn = new BotaoArredondado(texto);
         btn.setFont(new Font("Segoe UI Semibold", Font.PLAIN, 15));
         btn.setForeground(Color.WHITE);
-        btn.setBackground(new Color(234, 29, 44)); 
+        btn.setBackground(new Color(234, 29, 44));
         btn.setFocusPainted(false);
-        btn.setBorder(BorderFactory.createEmptyBorder()); 
-        btn.setBounds(460, y, 300, 50); 
+        btn.setBorder(BorderFactory.createEmptyBorder());
+        btn.setBounds(460, y, 300, 50);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btn.addActionListener(acao);
-        
+
         // Efeito visual ao passar o mouse
         btn.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) { 
-                btn.setBackground(new Color(200, 20, 30)); 
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                btn.setBackground(new Color(200, 20, 30));
             }
-            public void mouseExited(java.awt.event.MouseEvent evt) { 
-                btn.setBackground(new Color(234, 29, 44)); 
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                btn.setBackground(new Color(234, 29, 44));
             }
         });
-        
-        contentPane.add(btn);
-    }
-}
 
- */
+        this.add(btn);
+    }
+
+     */
+
+    private JPanel criarHeader() {
+        JPanel p = new JPanel(new GridBagLayout());
+        p.setBackground(Color.WHITE);
+        p.setPreferredSize(new Dimension(800, 80));
+
+        p.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(240, 240, 240)));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(0, 20, 0, 20);
+
+        // Logo (Texto vermelho marcante)
+        JLabel logo = new JLabel("AIFood");
+        logo.setFont(new Font("Arial", Font.BOLD, 24));
+        logo.setForeground(new Color(234, 16, 34)); // Vermelho iFood
+        gbc.gridx = 0;
+        gbc.weightx = 0.0;
+        p.add(logo, gbc);
+
+
+        CampoTextoArredondado busca = new CampoTextoArredondado(20, 15, new Color(240, 240, 240),30);
+        busca.setText(" Busque por pratos ou restaurantes...");
+        busca.setForeground(Color.GRAY);
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        p.add(busca, gbc);
+
+        return p;
+    }
+
+    private JPanel criarSecaoCategorias() {
+        JPanel painelSecao = new JPanel();
+        painelSecao.setLayout(new BoxLayout(painelSecao, BoxLayout.Y_AXIS));
+        painelSecao.setBackground(Color.WHITE);
+
+        // O TÍTULO
+        JLabel titulo = new JLabel("Categorias");
+        titulo.setFont(new Font("Arial", Font.BOLD, 20));
+        titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        painelSecao.add(titulo);
+
+        painelSecao.add(Box.createVerticalStrut(15));
+
+        // O CONTEÚDO HORIZONTAL
+        JPanel listaHorizontal = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
+        listaHorizontal.setBackground(Color.WHITE);
+        listaHorizontal.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        listaHorizontal.add(new BotaoArredondado("Mercado", 20, Color.decode("#e96769"), 20));
+        listaHorizontal.add(new BotaoArredondado("Restaurantes", 20, Color.decode("#e96769"), 20));
+        listaHorizontal.add(new BotaoArredondado("Bebidas", 20, Color.decode("#e96769"), 20));
+        listaHorizontal.add(new BotaoArredondado("Farmácia", 20, Color.decode("#e96769"), 20));
+        listaHorizontal.add(new BotaoArredondado("Pet Shop", 20, Color.decode("#e96769"), 20));
+
+        // O SCROLL HORIZONTAL
+        JScrollPane scrollHorizontal = new JScrollPane(listaHorizontal);
+        scrollHorizontal.setBorder(null);
+        scrollHorizontal.setOpaque(false);
+        scrollHorizontal.getViewport().setOpaque(false);
+
+        scrollHorizontal.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollHorizontal.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+
+        scrollHorizontal.getHorizontalScrollBar().setUnitIncrement(16);
+        scrollHorizontal.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // --------------------------------------------------------------------------
+        // ADICIONADO: Proteção contra o conflito de Scroll também nas Categorias!
+        // --------------------------------------------------------------------------
+        scrollHorizontal.addMouseWheelListener(e -> {
+            JScrollBar bar = scrollHorizontal.getHorizontalScrollBar();
+            int cliques = e.getWheelRotation();
+            // Controla o movimento horizontal baseado na rodinha do mouse
+            int novaPosicao = bar.getValue() + (cliques * bar.getUnitIncrement() * 2);
+            bar.setValue(novaPosicao);
+
+            // Alerta o Java que o scroll vertical pai não deve interferir aqui
+            e.consume();
+        });
+        // --------------------------------------------------------------------------
+
+        painelSecao.add(scrollHorizontal);
+        return painelSecao;
+    }
+
+    private JPanel criarListaRestaurantes() {
+// 1. O painel principal da seção (GridBagLayout para empilhar o Título e o Carrossel)
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(Color.WHITE);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        gbc.anchor = GridBagConstraints.WEST;
+
+        // LINHA 0: O Título da Seção (Fica em cima)
+        JLabel titulo = new JLabel("Lojas Disponíveis");
+        titulo.setFont(new Font("Arial", Font.BOLD, 20));
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 15, 0); // Espaço de 15px abaixo do título
+        panel.add(titulo, gbc);
+
+        // LINHA 1: O contêiner que vai alinhar os cards lado a lado (X_AXIS)
+        JPanel listaHorizontal = new JPanel();
+        listaHorizontal.setLayout(new BoxLayout(listaHorizontal, BoxLayout.X_AXIS));
+        listaHorizontal.setBackground(Color.WHITE);
+
+        // Adicionando os Cards na horizontal
+        listaHorizontal.add(new CardRestaurante("Burguer King", "4.7", "15-25 min", "R$ 4,99"));
+        listaHorizontal.add(Box.createHorizontalStrut(15)); // Espaço horizontal de 15px entre os cards
+
+        listaHorizontal.add(new CardRestaurante("Pizza Hut", "4.5", "30-40 min", "Grátis"));
+        listaHorizontal.add(Box.createHorizontalStrut(15));
+
+        listaHorizontal.add(new CardRestaurante("Subway - Centro", "4.3", "20-30 min", "R$ 2,00"));
+        listaHorizontal.add(Box.createHorizontalStrut(15));
+
+        listaHorizontal.add(new CardRestaurante("Jonas", "4.3", "20-30 min", "R$ 2,00"));
+        listaHorizontal.add(Box.createHorizontalStrut(15));
+
+        listaHorizontal.add(new CardRestaurante("Pizza Hut", "4.5", "30-40 min", "Grátis"));
+        listaHorizontal.add(Box.createHorizontalStrut(15));
+
+        listaHorizontal.add(new CardRestaurante("Subway - Centro", "4.3", "20-30 min", "R$ 2,00"));
+        listaHorizontal.add(Box.createHorizontalStrut(15));
+        listaHorizontal.add(new CardRestaurante("Pizza Hut", "4.5", "30-40 min", "Grátis"));
+        listaHorizontal.add(Box.createHorizontalStrut(15));
+
+        listaHorizontal.add(new CardRestaurante("Subway - Centro", "4.3", "20-30 min", "R$ 2,00"));
+        listaHorizontal.add(Box.createHorizontalStrut(15));
+        listaHorizontal.add(new CardRestaurante("Pizza Hut", "4.5", "30-40 min", "Grátis"));
+        listaHorizontal.add(Box.createHorizontalStrut(15));
+
+        listaHorizontal.add(new CardRestaurante("Subway - Centro", "4.3", "20-30 min", "R$ 2,00"));
+        listaHorizontal.add(Box.createHorizontalStrut(15));
+        listaHorizontal.setPreferredSize(new Dimension(2500, 100));
+
+        JScrollPane scrollHorizontal = new JScrollPane(listaHorizontal);
+        scrollHorizontal.setBorder(null);
+
+        scrollHorizontal.setOpaque(true);
+        scrollHorizontal.setBackground(new Color(248, 248, 248));
+        scrollHorizontal.getViewport().setOpaque(true);
+        scrollHorizontal.getViewport().setBackground(new Color(248, 248, 248));
+
+        listaHorizontal.setOpaque(true);
+        listaHorizontal.setBackground(Color.WHITE);
+        // TRAVA 2: Forçamos a barra a SEMPRE estar ativa para teste
+        scrollHorizontal.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+        scrollHorizontal.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+
+        // TRAVA 3: Define uma altura limite para o Scroll na tela do app
+        scrollHorizontal.setPreferredSize(new Dimension(800, 120));
+        scrollHorizontal.setMinimumSize(new Dimension(100, 120));
+
+        scrollHorizontal.getHorizontalScrollBar().setUnitIncrement(20);
+
+        // O Evento da rodinha do mouse (Mantém ele aqui)
+        scrollHorizontal.addMouseWheelListener(e -> {
+            JScrollBar bar = scrollHorizontal.getHorizontalScrollBar();
+            int cliques = e.getWheelRotation();
+            int novaPosicao = bar.getValue() + (cliques * bar.getUnitIncrement() * 2);
+            bar.setValue(novaPosicao);
+            e.consume();
+        });
+
+        // Adiciona o scroll horizontal corrigido no painel
+
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        panel.add(scrollHorizontal, gbc);
+
+        return panel;
+    }
+
+}

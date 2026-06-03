@@ -7,9 +7,8 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-
-public class TelaInicial extends Telabase{
-    JPanel panel1;
+import view.Telabase;
+public class TelaInicial extends JPanel{
     JPanel panelesq;
     JPanel paneldir;
     JPanel painelBotoes;
@@ -22,14 +21,20 @@ public class TelaInicial extends Telabase{
     CheckboxCustomizado chk_entregador;
     CheckboxCustomizado chk_restaurante;
     public TelaInicial(){
-        super();
-        panel1 = new JPanel(new GridLayout(1,2));
+
+        setLayout(new GridLayout(1,2));
         panelesq = new JPanel();
         paneldir = new PainelFormulario();
-        panel1.setBackground(Color.decode("#e96769"));
+        this.setBackground(Color.decode("#e96769"));
         panelesq.setBackground(Color.decode("#e96769"));
         ImageIcon banner = new ImageIcon("img/banner_delivery.jpg");
 
+        Image novaImg = banner.getImage().getScaledInstance(
+                Telabase.Width/2,
+                Telabase.Height,
+                Image.SCALE_SMOOTH
+        );
+        banner.setImage(novaImg);
         JLabel imagem = new JLabel(banner);
 
         panelesq.add(imagem);
@@ -99,30 +104,6 @@ public class TelaInicial extends Telabase{
         painelBotoes.add(sair);
         painelBotoes.add(cadastrar);
         paneldir.add(painelBotoes,gbc);
-        panelesq.addComponentListener(new ComponentAdapter() {
-            @Override
-            public void componentResized(ComponentEvent e) {
-                // Garante que o painel já tem tamanho na tela
-                if (panelesq.getWidth() > 0 && panelesq.getHeight() > 0) {
-
-                    // Pega a imagem pura do ImageIcon
-                    Image img = banner.getImage();
-
-                    // Redimensiona a imagem para preencher o painel suavemente
-                    Image novaImg = img.getScaledInstance(
-                            panelesq.getWidth(),
-                            panelesq.getHeight(),
-                            Image.SCALE_SMOOTH
-                    );
-
-
-                    imagem.setIcon(new ImageIcon(novaImg));
-                }
-            }
-        });
-        sair.addActionListener(e -> {
-            System.exit(0);
-        });
         cadastrar.setEnabled(false);
 
 
@@ -162,16 +143,24 @@ public class TelaInicial extends Telabase{
                     str_tipo = "restaurante";
 
                 }
+                    System.out.println("Requisicao enviada para o BD\n" +
+                            "Usuario:"+str_usuario+
+                            "\nEmail:"+str_email+
+                            "\nSenha:"+str_senha.length()+
+                            "\nTipo:"+str_tipo);
+
                     Login.cadastrarUsuario(str_usuario,str_email,str_senha,str_tipo);
                     Login.realizarLogin(str_email,str_senha);
-                    TelaLogin tl = new TelaLogin();
-                    tl.setVisible(true);
-                    dispose();
+
+                    TelaPrincipal tl = new TelaPrincipal();
+                    Telabase sist = (Telabase) SwingUtilities.getWindowAncestor(this);
+                    if(sist != null)
+                        sist.configuraTela(tl);
             }
         });
-        panel1.add(panelesq);
-        panel1.add(paneldir);
-        configuraTela(panel1);
+        this.add(panelesq);
+        this.add(paneldir);
+
     }
 
 }

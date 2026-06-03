@@ -2,15 +2,19 @@ package view;
 
 import javax.swing.*;
 import java.awt.*;
+import view.Telabase;
+public class TelaLogin extends JPanel{
 
-public class TelaLogin extends Telabase{
-    JPanel panel1;
     public TelaLogin(){
-        super();
-        panel1 = new JPanel();
+        setLayout(new GridBagLayout());
+        setOpaque(false);
         Texto txt = new Texto("AQUI VAI SER PRINCIPAL");
         txt.setFont(new Font("ARIAL",Font.BOLD,30));
-        panel1.add(txt);
-        configuraTela(panel1);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0 ;
+        gbc.gridy=1;
+        this.add(txt,gbc);
+
+
     }
 }
