@@ -1,10 +1,10 @@
-package model;
+package bd;
 
 import com.mysql.cj.x.protobuf.MysqlxSql;
 
 import java.sql.*;
 import java.util.prefs.Preferences;
-public class Login {
+public class BancoDados {
     protected String Email;
     protected String Senha;
     protected String User;
@@ -14,16 +14,9 @@ public class Login {
     private static final String SENHA = "1234"; // Adapte para a sua senha
     private static int id;
 
-    public Login(String email, String senha, String user) {
-        this.Email = email;
-        this.Senha = senha;
-        this.User = user;
-    }
-
     public void setTipo(String tipo) {
         this.tipo = tipo;
     }
-
     public String GetUser() {
         if(User.isEmpty()) {
             if (Email.isEmpty() || Senha.isEmpty()) {
@@ -68,62 +61,23 @@ public class Login {
 
     public static void inicializarBanco() {
 
-        String sqlCriarBanco = "CREATE DATABASE IF NOT EXISTS sistema_delivery";
+        //String sqlCriarBanco = "CREATE DATABASE IF NOT EXISTS sistema_delivery";
 
         // Nova tabela para cadastrar os usuários do sistema
-        String sqlTabelaUsuarios = "CREATE TABLE IF NOT EXISTS usuarios (" +
-                "id INT AUTO_INCREMENT PRIMARY KEY, " +
-                "nome VARCHAR(255) NOT NULL, " +
-                "email VARCHAR(255) UNIQUE NOT NULL, " +
-                "senha VARCHAR(255) NOT NULL," +
-                "tipo VARCHAR(255) NOT NULL"+
-                ");";
 
 
-        String sqlTabelaCookie = "CREATE TABLE IF NOT EXISTS cookie (" +
-                "id INT PRIMARY KEY, " +
-                "logado TINYINT DEFAULT 0, " +
-                "nome_usuario VARCHAR(255), " +
-                "email_usuario VARCHAR(255)" +
-                ");";
-
-        String sqlTabelaRestaurante = "CREATE TABLE IF NOT EXISTS restaurante (" +
-                "id INT AUTO_INCREMENT PRIMARY KEY, " +
-                "nome VARCHAR(255) NOT NULL, " +
-                "localizacao VARCHAR(255) NOT NULL, " +
-                "estrelas INT NOT NULL, " +
-                "id_gerente INT ," +
-                "CONSTRAINT fk_restaurante_gerente" +
-                "    FOREIGN KEY (id_gerente) REFERENCES usuarios(id)" +
-                "    ON DELETE CASCADE" +
-                "    ON UPDATE CASCADE"+
-                ");";
-
-
-        String sqlTabelaCardapio = "CREATE TABLE IF NOT EXISTS cardapio (" +
-                "id INT AUTO_INCREMENT PRIMARY KEY, " +
-                "nome_prato VARCHAR(255) NOT NULL," +
-                "preco DECIMAL(10,2) NOT NULL," +
-                "id_restaurante INT," +
-                "CONSTRAINT fk_cardapio_restaurante" +
-                "    FOREIGN KEY (id_restaurante) REFERENCES restaurante(id)" +
-                "    ON DELETE CASCADE" +
-                "    ON UPDATE CASCADE"+
-                ");";
         try (Connection conn = obterConexao();
              Statement stmt = conn.createStatement()) {
             //stmt.executeUpdate("DROP DATABASE IF EXISTS sistema_delivery");
-            stmt.executeUpdate(sqlCriarBanco);
+            //stmt.executeUpdate(sqlCriarBanco);
             stmt.executeUpdate("USE sistema_delivery");
-            stmt.execute(sqlTabelaUsuarios);
-            stmt.execute(sqlTabelaCookie);
-            stmt.execute(sqlTabelaRestaurante);
-            stmt.execute(sqlTabelaCardapio);
-            // Insere a linha padrão do cookie se for a primeira vez rodando
-            String sqlInsertInicial = "INSERT IGNORE INTO cookie (id, logado, nome_usuario, email_usuario) VALUES (1, 0, NULL, NULL);";
-            stmt.execute(sqlInsertInicial);
 
-            System.out.println("Banco de dados e tabelas ('usuarios' , 'cookie' , 'restaurante' e 'cardapio') verificados com sucesso!");
+
+            // Insere a linha padrão do cookie se for a primeira vez rodando
+            //String sqlInsertInicial = "INSERT IGNORE INTO cardapio (id, logado, nome_usuario, email_usuario) VALUES (1, 0, NULL, NULL);";
+            //stmt.execute(sqlInsertInicial);
+
+            System.out.println("Banco de dados e tabelas ('usuarios' e 'cookie') verificados com sucesso!");
 
         } catch (SQLException e) {
             System.err.println("Erro no processo MySQL ao inicializar: " + e.getMessage());
@@ -131,7 +85,7 @@ public class Login {
     }
 
 
-    public static boolean cadastrarUsuario(String nome, String email, String senha,String tipo) {
+    public static boolean cadastrarRestaurante(String nome, String email, String senha,String tipo) {
         String sql = "INSERT INTO usuarios (nome, email, senha, tipo) VALUES (?, ?, ?, ?);";
 
         try (Connection conn = obterConexao();
@@ -142,8 +96,6 @@ public class Login {
             pstmt.setString(3, senha); // Em sistemas reais, aplique criptografia aqui
             pstmt.setString(4,tipo);
             pstmt.executeUpdate();
-            Login ln = new Login(email,senha,nome);
-            ln.setTipo(tipo);
             System.out.println("Usuário cadastrado com sucesso!");
             return true;
 
@@ -152,89 +104,7 @@ public class Login {
             return false;
         }
     }
-    public static boolean cadastrarRestaurante(String nome, String localizacao,String email ,String senha, String avaliacao) {
-        String sql_find = "SELECT id FROM usuarios where email = ? AND senha = ?";
-        boolean passou = false;
-        String id = new String();
-        try (Connection conn = obterConexao();
-             PreparedStatement pstmt = conn.prepareStatement(sql_find)) {
 
-            pstmt.setString(1, email);
-            pstmt.setString(2, senha);
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    id = rs.getString("id");
-                    passou = true;
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Erro ao realizar login no MySQL: " + e.getMessage());
-            return  false;
-        }
-        if(!passou) {
-            System.out.println("Usuário ou senha incorretos.");
-            return false; // Retorna falso se as credenciais estiverem erradas
-        }
-        String sql = "INSERT INTO restaurante (nome , estrelas, avaliacao, id_gerente) VALUES (?, ?, ?, ?);";
-
-        try (Connection conn = obterConexao();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setString(1, nome);
-            pstmt.setString(2, localizacao);
-            pstmt.setString(3, avaliacao);
-            pstmt.setString(4,id);
-            pstmt.executeUpdate();
-            System.out.println("Restaurante cadastrado com sucesso !");
-            return true;
-
-        } catch (SQLException e) {
-            System.err.println("Erro ao cadastrar restaurante: " + e.getMessage());
-            return false;
-        }
-    }
-    public static boolean cadastrarCardapio(String nome_prato, String preco,String nome ,String avaliacao) {
-        String sql_find = "SELECT id FROM restaurante where nome = ? AND estrelas = ?";
-        boolean passou = false;
-        String id = new String();
-        try (Connection conn = obterConexao();
-             PreparedStatement pstmt = conn.prepareStatement(sql_find)) {
-
-            pstmt.setString(1, nome);
-            pstmt.setString(2, avaliacao);
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    id = rs.getString("id");
-                    passou = true;
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Erro ao buscar restaurante Mysql: " + e.getMessage());
-            return  false;
-        }
-        if(!passou) {
-            System.out.println("Restaurante nao encontrado.");
-            return false; // Retorna falso se as credenciais estiverem erradas
-        }
-        String sql = "INSERT INTO cardapio (nome, preco, id_restaurante) VALUES (?, ?, ?);";
-
-        try (Connection conn = obterConexao();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setString(1, nome);
-            pstmt.setString(2, preco);
-            pstmt.setString(3,id);
-            pstmt.executeUpdate();
-            System.out.println("Cardapio cadastrado com sucesso !");
-            return true;
-
-        } catch (SQLException e) {
-            System.err.println("Erro ao cadastrar cardapio: " + e.getMessage());
-            return false;
-        }
-    }
     // 2. AUTENTICAR E SALVAR COOKIE (O método de login que sua tela vai chamar)
     public static boolean realizarLogin(String email, String senha) {
         // Busca na tabela de usuários se existe a combinação exata de e-mail e senha
@@ -298,7 +168,7 @@ public class Login {
         return false;
     }
 
-    // 4. APAGAR COOKIE (Logout)
+
     public static void apagarCookie() {
         String sql = "UPDATE cookie SET logado = 0, nome_usuario = NULL, email_usuario = NULL WHERE id = 1;";
 

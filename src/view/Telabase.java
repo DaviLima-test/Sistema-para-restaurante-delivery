@@ -106,6 +106,7 @@ class BotaoArredondado extends JButton {
         // Manda o Java desenhar o texto e o ícone por cima do fundo que criamos
         super.paintComponent(g);
     }
+
 }
 class CampoTextoArredondado extends JTextField {
     private int raio;

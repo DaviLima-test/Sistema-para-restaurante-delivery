@@ -10,5 +10,6 @@
     <orderEntry type="library" name="com.miglayout.core_11.4.2" level="project" />
     <orderEntry type="library" name="com.miglayout.swing_11.4.2" level="project" />
     <orderEntry type="library" name="mysql-connector-j-8.0.33" level="project" />
+    <orderEntry type="library" name="flatlaf-3.7.1" level="project" />
   </component>
 </module>

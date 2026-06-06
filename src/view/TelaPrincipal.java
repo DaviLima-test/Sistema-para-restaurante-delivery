@@ -4,6 +4,10 @@ package view;
 import java.awt.*;
 import java.io.File;
 import javax.swing.*;
+import javax.swing.plaf.ScrollPaneUI;
+import javax.swing.plaf.basic.BasicScrollBarUI;
+
+import static java.awt.SystemColor.scrollbar;
 
 public class TelaPrincipal extends JPanel {
     JPanel conteudoInterno;
@@ -70,7 +74,15 @@ public class TelaPrincipal extends JPanel {
         scroll.getViewport().setOpaque(false);
 
         add(scroll, BorderLayout.CENTER);
-
+        BotaoArredondado btn = new BotaoArredondado("Trocar de tela",30,Color.GRAY , 50);
+        btn.addActionListener(e -> {
+            TelaLogin ln = new TelaLogin();
+            Telabase sist = (Telabase) SwingUtilities.getWindowAncestor(this);
+            if(sist != null){
+                sist.configuraTela(ln);
+            }
+        });
+        conteudoInterno.add(btn,gbc);
     }
 
     // Método para criar botões com o mesmo padrão visual
@@ -155,11 +167,20 @@ public class TelaPrincipal extends JPanel {
         listaHorizontal.add(new BotaoArredondado("Bebidas", 20, Color.decode("#e96769"), 20));
         listaHorizontal.add(new BotaoArredondado("Farmácia", 20, Color.decode("#e96769"), 20));
         listaHorizontal.add(new BotaoArredondado("Pet Shop", 20, Color.decode("#e96769"), 20));
-
+        listaHorizontal.add(new BotaoArredondado("Mercado", 20, Color.decode("#e96769"), 20));
+        listaHorizontal.add(new BotaoArredondado("Restaurantes", 20, Color.decode("#e96769"), 20));
+        listaHorizontal.add(new BotaoArredondado("Bebidas", 20, Color.decode("#e96769"), 20));
+        listaHorizontal.add(new BotaoArredondado("Farmácia", 20, Color.decode("#e96769"), 20));
+        listaHorizontal.add(new BotaoArredondado("Pet Shop", 20, Color.decode("#e96769"), 20));
+        listaHorizontal.add(new BotaoArredondado("Mercado", 20, Color.decode("#e96769"), 20));
+        listaHorizontal.add(new BotaoArredondado("Restaurantes", 20, Color.decode("#e96769"), 20));
+        listaHorizontal.add(new BotaoArredondado("Bebidas", 20, Color.decode("#e96769"), 20));
+        listaHorizontal.add(new BotaoArredondado("Farmácia", 20, Color.decode("#e96769"), 20));
+        listaHorizontal.add(new BotaoArredondado("Pet Shop", 20, Color.decode("#e96769"), 20));
         // O SCROLL HORIZONTAL
         JScrollPane scrollHorizontal = new JScrollPane(listaHorizontal);
         scrollHorizontal.setBorder(null);
-        scrollHorizontal.setOpaque(false);
+        scrollHorizontal.setOpaque(true);
         scrollHorizontal.getViewport().setOpaque(false);
 
         scrollHorizontal.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -226,41 +247,53 @@ public class TelaPrincipal extends JPanel {
         listaHorizontal.add(new CardRestaurante("Pizza Hut", "4.5", "30-40 min", "Grátis"));
         listaHorizontal.add(Box.createHorizontalStrut(15));
 
-        listaHorizontal.add(new CardRestaurante("Subway - Centro", "4.3", "20-30 min", "R$ 2,00"));
+        listaHorizontal.add(new CardRestaurante("ASASASAS - Centro", "4.3", "20-30 min", "R$ 2,00"));
         listaHorizontal.add(Box.createHorizontalStrut(15));
-        listaHorizontal.add(new CardRestaurante("Pizza Hut", "4.5", "30-40 min", "Grátis"));
-        listaHorizontal.add(Box.createHorizontalStrut(15));
-
-        listaHorizontal.add(new CardRestaurante("Subway - Centro", "4.3", "20-30 min", "R$ 2,00"));
-        listaHorizontal.add(Box.createHorizontalStrut(15));
-        listaHorizontal.add(new CardRestaurante("Pizza Hut", "4.5", "30-40 min", "Grátis"));
+        listaHorizontal.add(new CardRestaurante("PASASASt", "4.5", "30-40 min", "Grátis"));
         listaHorizontal.add(Box.createHorizontalStrut(15));
 
-        listaHorizontal.add(new CardRestaurante("Subway - Centro", "4.3", "20-30 min", "R$ 2,00"));
+        listaHorizontal.add(new CardRestaurante("12o", "4.3", "20-30 min", "R$ 2,00"));
+        listaHorizontal.add(Box.createHorizontalStrut(15));
+        listaHorizontal.add(new CardRestaurante("AAAAAAAAAAA", "4.5", "30-40 min", "Grátis"));
+        listaHorizontal.add(Box.createHorizontalStrut(15));
+
+        listaHorizontal.add(new CardRestaurante("21", "4.3", "20-30 min", "R$ 2,00"));
         listaHorizontal.add(Box.createHorizontalStrut(15));
         listaHorizontal.setPreferredSize(new Dimension(2500, 100));
 
-        JScrollPane scrollHorizontal = new JScrollPane(listaHorizontal);
-        scrollHorizontal.setBorder(null);
-
-        scrollHorizontal.setOpaque(true);
-        scrollHorizontal.setBackground(new Color(248, 248, 248));
-        scrollHorizontal.getViewport().setOpaque(true);
-        scrollHorizontal.getViewport().setBackground(new Color(248, 248, 248));
-
         listaHorizontal.setOpaque(true);
         listaHorizontal.setBackground(Color.WHITE);
-        // TRAVA 2: Forçamos a barra a SEMPRE estar ativa para teste
-        scrollHorizontal.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
-        scrollHorizontal.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+
+        JScrollPane scrollHorizontal = new JScrollPane(listaHorizontal,JScrollPane.VERTICAL_SCROLLBAR_NEVER,JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+
+        scrollHorizontal.setBorder(null);
+        scrollHorizontal.setOpaque(true);
+        scrollHorizontal.setBackground(Color.BLACK);
+        scrollHorizontal.getViewport().setOpaque(false);
 
         // TRAVA 3: Define uma altura limite para o Scroll na tela do app
         scrollHorizontal.setPreferredSize(new Dimension(800, 120));
         scrollHorizontal.setMinimumSize(new Dimension(100, 120));
+        scrollHorizontal.getHorizontalScrollBar().setUnitIncrement(40);
 
-        scrollHorizontal.getHorizontalScrollBar().setUnitIncrement(20);
+        /*
+        BotaoArredondado ir_dir = new BotaoArredondado(">",100,Color.black,50);
+        BotaoArredondado ir_esq = new BotaoArredondado("<",100,Color.GRAY,50);
 
-        // O Evento da rodinha do mouse (Mantém ele aqui)
+        ir_dir.addActionListener(e->{
+            JScrollBar bar = scrollHorizontal.getHorizontalScrollBar();
+            int novaPosicao = bar.getValue() + (bar.getUnitIncrement() * 10);
+            bar.setValue(novaPosicao);
+        });
+
+        ir_esq.addActionListener(e->{
+            JScrollBar bar = scrollHorizontal.getHorizontalScrollBar();
+            int novaPosicao = bar.getValue() - (bar.getUnitIncrement() * 10);
+            bar.setValue(novaPosicao);
+        });
+
+
+         */
         scrollHorizontal.addMouseWheelListener(e -> {
             JScrollBar bar = scrollHorizontal.getHorizontalScrollBar();
             int cliques = e.getWheelRotation();
@@ -269,13 +302,22 @@ public class TelaPrincipal extends JPanel {
             e.consume();
         });
 
-        // Adiciona o scroll horizontal corrigido no painel
-
         gbc.gridy = 1;
         gbc.insets = new Insets(0, 0, 0, 0);
         panel.add(scrollHorizontal, gbc);
+        /*
+        gbc.insets = new Insets(0, 0, 40, 0);
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.gridy = 2;
+        panel.add(ir_esq,gbc);
+        //gbc.gridx = 1;
+        gbc.anchor = GridBagConstraints.EAST;
+        panel.add(ir_dir,gbc);
 
+         */
         return panel;
     }
 
 }
+

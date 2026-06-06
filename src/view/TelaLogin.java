@@ -8,12 +8,24 @@ public class TelaLogin extends JPanel{
     public TelaLogin(){
         setLayout(new GridBagLayout());
         setOpaque(false);
-        Texto txt = new Texto("AQUI VAI SER PRINCIPAL");
-        txt.setFont(new Font("ARIAL",Font.BOLD,30));
+        JTabbedPane menuAbas = new JTabbedPane();
+
+        // Criando as telas de conteúdo (Abas)
+        JPanel telaRestaurantes = new JPanel();
+        telaRestaurantes.setBackground(Color.WHITE);
+        telaRestaurantes.add(new JLabel("Gerenciamento de Restaurantes"));
+
+        JPanel telaCardapios = new JPanel();
+        telaCardapios.setBackground(Color.WHITE);
+        telaCardapios.add(new JLabel("Gerenciamento de Cardápios"));
+
+        // Adicionando as telas nas abas correspondentes
+        menuAbas.addTab("Ver Restaurantes", telaRestaurantes);
+        menuAbas.addTab("Ver Cardápios", telaCardapios);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0 ;
         gbc.gridy=1;
-        this.add(txt,gbc);
+        this.add(menuAbas,gbc);
 
 
     }
