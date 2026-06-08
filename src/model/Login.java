@@ -5,55 +5,65 @@ import com.mysql.cj.x.protobuf.MysqlxSql;
 import java.sql.*;
 import java.util.prefs.Preferences;
 public class Login {
-    protected String Email;
-    protected String Senha;
-    protected String User;
-    protected String tipo;
+    protected static String Email;
+    protected static String Senha;
+    protected static String User;
+    protected static String tipo;
     private static final String URL = "jdbc:mysql://localhost:3306/sistema_delivery";
     private static final String USUARIO = "root";
     private static final String SENHA = "1234"; // Adapte para a sua senha
     private static int id;
 
+    /*
     public Login(String email, String senha, String user) {
         this.Email = email;
         this.Senha = senha;
         this.User = user;
+        //this.tipo = new String();
     }
 
-    public void setTipo(String tipo) {
+
+     */
+    public Login(String email , String user,String tipo) {
+        this.Email = email;
+        this.User = user;
         this.tipo = tipo;
+}
+public String GetUser() {
+    if(User.isEmpty()) {
+        if (Email.isEmpty() || Senha.isEmpty()) {
+            System.out.println("Nao ha como requerir pois alguma das variáveis está sem o ngc");
+            return null;
+        } else {
+            String sqlBuscar = "SELECT nome FROM usuarios WHERE email = ? AND senha = ?;";
+
+            try (Connection conn = obterConexao();
+                 PreparedStatement pstmt = conn.prepareStatement(sqlBuscar)) {
+
+                pstmt.setString(1, Email);
+                pstmt.setString(2, Senha);
+
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    if (rs.next()) {
+                        // Se encontrou o usuário, pega o nome dele do banco
+                        String nomeUsuario = rs.getString("nome");
+                        return nomeUsuario;
+                    }
+                }
+            } catch (SQLException e) {
+                System.err.println("Erro ao realizar login no MySQL: " + e.getMessage());
+                return null;
+            }
+        }
+    }else{
+        return User;
+    }
+    return null;
     }
 
-    public String GetUser() {
-        if(User.isEmpty()) {
-            if (Email.isEmpty() || Senha.isEmpty()) {
-                System.out.println("Nao ha como requerir pois alguma das variáveis está sem o ngc");
-                return null;
-            } else {
-                String sqlBuscar = "SELECT nome FROM usuarios WHERE email = ? AND senha = ?;";
+    public static String GetTipo() {
+        return tipo;
 
-                try (Connection conn = obterConexao();
-                     PreparedStatement pstmt = conn.prepareStatement(sqlBuscar)) {
-
-                    pstmt.setString(1, Email);
-                    pstmt.setString(2, Senha);
-
-                    try (ResultSet rs = pstmt.executeQuery()) {
-                        if (rs.next()) {
-                            // Se encontrou o usuário, pega o nome dele do banco
-                            String nomeUsuario = rs.getString("nome");
-                            return nomeUsuario;
-                        }
-                    }
-                } catch (SQLException e) {
-                    System.err.println("Erro ao realizar login no MySQL: " + e.getMessage());
-                    return null;
-                }
-            }
-        }else{
-            return User;
-        }
-        return null;
     }
 
     public String MudarSenha() {
@@ -84,7 +94,8 @@ public class Login {
                 "id INT PRIMARY KEY, " +
                 "logado TINYINT DEFAULT 0, " +
                 "nome_usuario VARCHAR(255), " +
-                "email_usuario VARCHAR(255)" +
+                "email_usuario VARCHAR(255)," +
+                "tipo_usuario VARCHAR(255)"+
                 ");";
 
         String sqlTabelaRestaurante = "CREATE TABLE IF NOT EXISTS restaurante (" +
@@ -120,7 +131,7 @@ public class Login {
             stmt.execute(sqlTabelaRestaurante);
             stmt.execute(sqlTabelaCardapio);
             // Insere a linha padrão do cookie se for a primeira vez rodando
-            String sqlInsertInicial = "INSERT IGNORE INTO cookie (id, logado, nome_usuario, email_usuario) VALUES (1, 0, NULL, NULL);";
+            String sqlInsertInicial = "INSERT IGNORE INTO cookie (id, logado, nome_usuario, email_usuario, tipo_usuario) VALUES (1, 0, NULL, NULL,NULL);";
             stmt.execute(sqlInsertInicial);
 
             System.out.println("Banco de dados e tabelas ('usuarios' , 'cookie' , 'restaurante' e 'cardapio') verificados com sucesso!");
@@ -143,7 +154,8 @@ public class Login {
             pstmt.setString(4,tipo);
             pstmt.executeUpdate();
             Login ln = new Login(email,senha,nome);
-            ln.setTipo(tipo);
+            ln.tipo = tipo;
+
             System.out.println("Usuário cadastrado com sucesso!");
             return true;
 
@@ -237,8 +249,8 @@ public class Login {
     }
     // 2. AUTENTICAR E SALVAR COOKIE (O método de login que sua tela vai chamar)
     public static boolean realizarLogin(String email, String senha) {
-        // Busca na tabela de usuários se existe a combinação exata de e-mail e senha
-        String sqlBuscar = "SELECT nome FROM usuarios WHERE email = ? AND senha = ?;";
+
+        String sqlBuscar = "SELECT nome, tipo FROM usuarios WHERE email = ? AND senha = ?;";
 
         try (Connection conn = obterConexao();
              PreparedStatement pstmt = conn.prepareStatement(sqlBuscar)) {
@@ -250,9 +262,9 @@ public class Login {
                 if (rs.next()) {
                     // Se encontrou o usuário, pega o nome dele do banco
                     String nomeUsuario = rs.getString("nome");
-
-                    // Salva que ele está logado na tabela cookie
-                    salvarCookieLogin(nomeUsuario, email);
+                    String tipoUsuario = rs.getString("tipo");
+                    Login  ln = new Login(email,nomeUsuario,tipoUsuario);
+                    salvarCookieLogin(nomeUsuario, email,tipoUsuario);
                     System.out.println("Login realizado com sucesso para: " + nomeUsuario);
                     return true;
                 }
@@ -266,16 +278,17 @@ public class Login {
     }
 
     // Método auxiliar privado (usado internamente pelo realizarLogin)
-    private static void salvarCookieLogin(String nome, String email) {
-        String sql = "UPDATE cookie SET logado = 1, nome_usuario = ?, email_usuario = ? WHERE id = 1;";
+    private static void salvarCookieLogin(String nome, String email,String tipo) {
+        String sql = "UPDATE cookie SET logado = 1, nome_usuario = ?, email_usuario = ?, tipo_usuario = ? WHERE id = 1;";
 
         try (Connection conn = obterConexao();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setString(1, nome);
             pstmt.setString(2, email);
+            pstmt.setString(3,tipo);
             pstmt.executeUpdate();
-
+            System.out.println("Esta salvo o cookie");
         } catch (SQLException e) {
             System.err.println("Erro ao atualizar cookie: " + e.getMessage());
         }
@@ -283,22 +296,42 @@ public class Login {
 
 
     public static boolean verificarSeEstaLogado() {
-        String sql = "SELECT logado FROM cookie WHERE id = 1;";
+        String sql = "SELECT logado, nome_usuario, email_usuario, tipo_usuario FROM cookie WHERE id = 1;";
 
         try (Connection conn = obterConexao();
              Statement stmt = conn.createStatement();
+
              ResultSet rs = stmt.executeQuery(sql)) {
 
+
             if (rs.next()) {
-                return rs.getBoolean("logado");
+                boolean estaLogado = rs.getBoolean("logado");
+                System.out.println(estaLogado);
+                if (estaLogado) {
+
+                    String nomeUsuario = rs.getString("nome_usuario");
+                    String emailUsuario = rs.getString("email_usuario");
+                    String tipousuario = rs.getString("tipo_usuario");
+
+                    Login ln = new Login(emailUsuario, nomeUsuario,tipousuario);
+                    System.out.println("Logado aqui");
+                    return true;
+                }
+
+
+                return false;
             }
+
         } catch (SQLException e) {
+
             System.err.println("Erro ao ler cookie no MySQL: " + e.getMessage());
+            throw new RuntimeException(e);
         }
+
+
         return false;
     }
-
-    // 4. APAGAR COOKIE (Logout)
+        // 4. APAGAR COOKIE (Logout)
     public static void apagarCookie() {
         String sql = "UPDATE cookie SET logado = 0, nome_usuario = NULL, email_usuario = NULL WHERE id = 1;";
 

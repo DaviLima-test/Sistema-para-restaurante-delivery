@@ -9,8 +9,8 @@ import java.io.File;
 import java.net.URL;
 
 public class Telabase extends JFrame {
-    protected static int Width;
-    protected static int Height;
+    public static int Width;
+    public static int Height;
     private int raioDoArredondamento;
 
     public Telabase(){
@@ -184,36 +184,37 @@ class CampoSenhaArredondado extends JPasswordField {
     }
 }
 class PainelFormulario extends JPanel {
+    private int  Width;
+    private int Heigth;
+    private Color cor;
+    public PainelFormulario(int Width,int Heigth,Color cor) {
 
-    public PainelFormulario() {
-        // Define o layout vertical para as opções
+        this.Width = Width;
+        this.Heigth = Heigth;
+        this.cor = cor;
         setLayout(new GridBagLayout());
 
-        // Torna o painel transparente para o fundo da janela aparecer nas bordas externos do retângulo
+
         setOpaque(false);
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
-        // Ativa o antialiasing para as bordas do retângulo ficarem suaves
+
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Define a margem (espaço) entre a borda da tela e o retângulo branco
+
         int margem = 50;
 
         int x = margem;
         int y = margem;
-        int largura = getWidth() - (margem * 2);
-        int altura = getHeight() - (margem * 2) ;
-        int raioCurva = 25; // Define o quão arredondado será o retângulo
-
-        // 1. Desenha a sombra ou preenchimento do retângulo branco
+        int largura = this.Width - (margem * 2);
+        int altura = this.Heigth - (margem * 2) ;
+        int raioCurva = 25;
         g2.setColor(Color.WHITE);
-        g2.fillRoundRect(x, y, largura, altura, raioCurva, raioCurva);
-
-
-        g2.setColor(new Color(230, 230, 230));
+        g2.setColor(this.cor);
+        g2.fillRoundRect(x,y,largura,altura,raioCurva,raioCurva);
         g2.drawRoundRect(x, y, largura, altura, raioCurva, raioCurva);
 
         g2.dispose();

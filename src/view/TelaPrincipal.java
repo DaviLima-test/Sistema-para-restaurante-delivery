@@ -2,22 +2,119 @@
 package view;
 
 import java.awt.*;
+import java.awt.event.*;
 import java.io.File;
 import javax.swing.*;
+import model.*;
 import javax.swing.plaf.ScrollPaneUI;
 import javax.swing.plaf.basic.BasicScrollBarUI;
 
 import static java.awt.SystemColor.scrollbar;
 
 public class TelaPrincipal extends JPanel {
-    JPanel conteudoInterno;
-
+    private boolean menu_aberto = false;
+    private JPanel conteudoInterno;
+    private JPanel barra_lateral;
     public TelaPrincipal() {
 
 
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
 
+        barra_lateral = new JPanel();
+        barra_lateral.setLayout(new BoxLayout(barra_lateral,BoxLayout.Y_AXIS));
+        barra_lateral.setBackground(Color.WHITE);
+        adicionarItemMenu("Perfil", new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+            }
+        });
+        adicionarItemMenu("Carrinho", new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+            }
+        });
+        adicionarItemMenu("Pedidos", new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+            }
+        });
+        adicionarItemMenu("Carteira", new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+            }
+        });
+
+
+        if(Login.GetTipo().equals(("restaurante"))){
+            adicionarItemMenu("Gerenciar restaurante", new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+
+                }
+            });
+          ;
+        }
+        if(Login.GetTipo().equals("entregador")){
+            adicionarItemMenu("Pedidos a serem entregues", new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+
+                }
+            });
+
+        }
+        adicionarItemMenu("Logout(APAGA O COOKIE DE SESSAO)", new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Object[] opcoes = {"Sim", "Não"};
+
+                int resposta = JOptionPane.showOptionDialog(
+                        null,
+                        "Você realmente deseja apagar os cookies?",
+                        "Confirmação",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        null,             // Usa o ícone padrão
+                        opcoes,           // Array com os textos dos botões
+                        opcoes[0]         // Botão focado por padrão (Sim)
+                );
+
+                if (resposta == JOptionPane.YES_OPTION) {
+                    Login.apagarCookie();
+                    System.exit(0); // Fecha o programa completamente, se preferir
+                }
+            }
+        });
+        adicionarItemMenu("Sair", new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                    Object[] opcoes = {"Sim", "Não"};
+
+                    int resposta = JOptionPane.showOptionDialog(
+                            null,
+                            "Você realmente deseja sair?",
+                            "Confirmação",
+                            JOptionPane.YES_NO_OPTION,
+                            JOptionPane.QUESTION_MESSAGE,
+                            null,             // Usa o ícone padrão
+                            opcoes,           // Array com os textos dos botões
+                            opcoes[0]         // Botão focado por padrão (Sim)
+                    );
+
+                    if (resposta == JOptionPane.YES_OPTION) {
+                        // Código para sair...
+                        System.exit(0); // Fecha o programa completamente, se preferir
+                    }
+
+            }
+        });
+        barra_lateral.setPreferredSize(new Dimension(0,0));
+        add(barra_lateral,BorderLayout.WEST);
 
         JPanel header = criarHeader();
         add(header, BorderLayout.NORTH);
@@ -28,7 +125,7 @@ public class TelaPrincipal extends JPanel {
 
         conteudoInterno.setLayout(new GridBagLayout());
         conteudoInterno.setBackground(Color.WHITE);
-        conteudoInterno.setBorder(BorderFactory.createEmptyBorder(20, 40, 20, 40));
+        conteudoInterno.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
@@ -45,14 +142,12 @@ public class TelaPrincipal extends JPanel {
         // Linha 1: Lista de Restaurantes
         gbc.gridy = 1;
         gbc.weighty = 0.0; // Mantém em zero
-        gbc.insets = new Insets(0, 0, 0, 0);
+        gbc.insets = new Insets(0, 0, 25, 0);
         conteudoInterno.add(criarListaRestaurantes(), gbc);
 
-        // -------------------------------------------------------------
-        // O SEGREDO: Linha 2 é a "Mola" que puxa tudo o que está acima para o topo
-        // -------------------------------------------------------------
+
         gbc.gridy = 2;
-        gbc.weighty = 1.0; // Sugará todo o espaço em branco vertical do fundo da tela
+        gbc.weighty = 1.0;
         JPanel molaInvisivel = new JPanel();
         molaInvisivel.setOpaque(false);
         conteudoInterno.add(molaInvisivel, gbc);
@@ -73,6 +168,7 @@ public class TelaPrincipal extends JPanel {
         scroll.setOpaque(false);
         scroll.getViewport().setOpaque(false);
 
+        JPanel panel = new JPanel(new GridLayout(1,1));
         add(scroll, BorderLayout.CENTER);
         BotaoArredondado btn = new BotaoArredondado("Trocar de tela",30,Color.GRAY , 50);
         btn.addActionListener(e -> {
@@ -82,38 +178,35 @@ public class TelaPrincipal extends JPanel {
                 sist.configuraTela(ln);
             }
         });
-        conteudoInterno.add(btn,gbc);
-    }
-
-    // Método para criar botões com o mesmo padrão visual
-    /*
-    private void adicionarBotao(String texto, int y, java.awt.event.ActionListener acao) {
-        BotaoArredondado() btn = new BotaoArredondado(texto);
-        btn.setFont(new Font("Segoe UI Semibold", Font.PLAIN, 15));
-        btn.setForeground(Color.WHITE);
-        btn.setBackground(new Color(234, 29, 44));
-        btn.setFocusPainted(false);
-        btn.setBorder(BorderFactory.createEmptyBorder());
-        btn.setBounds(460, y, 300, 50);
-        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btn.addActionListener(acao);
-
-        // Efeito visual ao passar o mouse
-        btn.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                btn.setBackground(new Color(200, 20, 30));
-            }
-
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                btn.setBackground(new Color(234, 29, 44));
+        this.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                ajustarLarguraDoFeed();
             }
         });
-
-        this.add(btn);
+        panel.add(btn);
+        add(panel,BorderLayout.AFTER_LAST_LINE);
+        //conteudoInterno.add(panel,gbc);
     }
+    private void ajustarLarguraDoFeed() {
+        // 1. Pega a largura total atual da janela
+        int larguraDisponivel = this.getWidth();
 
-     */
+        // 2. Se o menu hambúrguer estiver aberto, precisamos descontar os 250px dele
+        if (menu_aberto) {
+            larguraDisponivel -= 250;
+        }
 
+        // 3. Deixa uma pequena folga para a barra de rolagem vertical (ex: 20px) para não dar bug
+        larguraDisponivel -= 20;
+
+        // 4. Força o painel interno a ter exatamente essa largura, mantendo a altura que ele já tinha
+        int alturaAtual = conteudoInterno.getPreferredSize().height;
+        conteudoInterno.setPreferredSize(new Dimension(larguraDisponivel, alturaAtual));
+
+        // 5. Atualiza o layout
+        conteudoInterno.revalidate();
+    }
     private JPanel criarHeader() {
         JPanel p = new JPanel(new GridBagLayout());
         p.setBackground(Color.WHITE);
@@ -123,61 +216,127 @@ public class TelaPrincipal extends JPanel {
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(0, 20, 0, 20);
+        ImageIcon inc_hambuger = new ImageIcon("img/hambuger_icon.png");
+        Image novaImg = inc_hambuger.getImage().getScaledInstance(
+                50,
+                50,
+                Image.SCALE_SMOOTH
+        );
 
-        // Logo (Texto vermelho marcante)
-        JLabel logo = new JLabel("AIFood");
-        logo.setFont(new Font("Arial", Font.BOLD, 24));
-        logo.setForeground(new Color(234, 16, 34)); // Vermelho iFood
+        JButton bnt_hambuger = new JButton(new ImageIcon(novaImg));
+        bnt_hambuger.setPreferredSize(new Dimension(50,50));
+        bnt_hambuger.setMaximumSize(new Dimension(50,50));
         gbc.gridx = 0;
         gbc.weightx = 0.0;
+
+
+        p.add(bnt_hambuger,gbc);
+        JLabel logo = new JLabel("AIFood");
+        logo.setFont(new Font("Arial", Font.BOLD, 30));
+        logo.setForeground(new Color(234, 16, 34)); // Vermelho iFood
+        gbc.gridx = 1;
         p.add(logo, gbc);
 
 
-        CampoTextoArredondado busca = new CampoTextoArredondado(20, 15, new Color(240, 240, 240),30);
-        busca.setText(" Busque por pratos ou restaurantes...");
+        CampoTextoArredondado busca = new CampoTextoArredondado(18, 15, new Color(240, 240, 240),30);
+        busca.setText(" Buscar Restaurantes e pratos ...");
         busca.setForeground(Color.GRAY);
-        gbc.gridx = 1;
+        gbc.gridx = 2;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
+        busca.addFocusListener(new FocusListener() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if(busca.getText().equals(" Buscar Restaurantes e pratos ...")){
+                    busca.setText("");
+                }
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                if(busca.getText().isEmpty()){
+                    busca.setText(" Buscar Restaurantes e pratos ...");
+                }
+            }
+        });
+        bnt_hambuger.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+            menu_aberto = !menu_aberto;
+
+                System.out.println(menu_aberto);
+            if(menu_aberto){
+                barra_lateral.setPreferredSize(new Dimension(250,0));
+                barra_lateral.setVisible(true);
+
+            }else{
+                System.out.println("Deu aqui");
+                barra_lateral.setPreferredSize(new Dimension(0,0));
+                barra_lateral.setVisible(false);
+            }
+            ajustarLarguraDoFeed();
+            Container paneltop = p.getTopLevelAncestor();
+            if(paneltop != null) {
+                paneltop.revalidate();
+                paneltop.repaint();
+            }
+            }
+
+        });
         p.add(busca, gbc);
 
         return p;
     }
+    private void adicionarItemMenu(String texto , ActionListener e) {
+        BotaoArredondado btn = new BotaoArredondado(texto,25,Color.decode("#e96769"),20);
+        btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50)); // Ocupa toda a largura
+        btn.setForeground(Color.WHITE);
+        btn.setFont(new Font("Arial", Font.PLAIN, 16));
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.BLACK)); // Linha divisória
+        btn.addActionListener(e);
+        barra_lateral.add(btn);
+        barra_lateral.add(Box.createVerticalStrut(15));
+    }
+
+
+
+
 
     private JPanel criarSecaoCategorias() {
-        JPanel painelSecao = new JPanel();
-        painelSecao.setLayout(new BoxLayout(painelSecao, BoxLayout.Y_AXIS));
-        painelSecao.setBackground(Color.WHITE);
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBackground(Color.WHITE);
+        panel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // O TÍTULO
         JLabel titulo = new JLabel("Categorias");
         titulo.setFont(new Font("Arial", Font.BOLD, 20));
         titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
-        painelSecao.add(titulo);
+        panel.add(titulo);
 
-        painelSecao.add(Box.createVerticalStrut(15));
+        panel.add(Box.createVerticalStrut(15));
 
-        // O CONTEÚDO HORIZONTAL
-        JPanel listaHorizontal = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
+
+        JPanel listaHorizontal = new JPanel();
+        listaHorizontal.setLayout(new BoxLayout(listaHorizontal,BoxLayout.X_AXIS));
+
         listaHorizontal.setBackground(Color.WHITE);
         listaHorizontal.setAlignmentX(Component.LEFT_ALIGNMENT);
 
+        // AQUI AO INVÊS DDE TER ESSES DE DEBUG VAI SER OS TIPOS DOS RESTUARANTES PEGADOS NO BD
         listaHorizontal.add(new BotaoArredondado("Mercado", 20, Color.decode("#e96769"), 20));
+        listaHorizontal.add(Box.createRigidArea(new Dimension(20,15)));
         listaHorizontal.add(new BotaoArredondado("Restaurantes", 20, Color.decode("#e96769"), 20));
+        listaHorizontal.add(Box.createRigidArea(new Dimension(20,15)));
         listaHorizontal.add(new BotaoArredondado("Bebidas", 20, Color.decode("#e96769"), 20));
+        listaHorizontal.add(Box.createRigidArea(new Dimension(20,15)));
         listaHorizontal.add(new BotaoArredondado("Farmácia", 20, Color.decode("#e96769"), 20));
+        listaHorizontal.add(Box.createRigidArea(new Dimension(20,15)));
         listaHorizontal.add(new BotaoArredondado("Pet Shop", 20, Color.decode("#e96769"), 20));
+        listaHorizontal.add(Box.createRigidArea(new Dimension(20,15)));
         listaHorizontal.add(new BotaoArredondado("Mercado", 20, Color.decode("#e96769"), 20));
-        listaHorizontal.add(new BotaoArredondado("Restaurantes", 20, Color.decode("#e96769"), 20));
-        listaHorizontal.add(new BotaoArredondado("Bebidas", 20, Color.decode("#e96769"), 20));
-        listaHorizontal.add(new BotaoArredondado("Farmácia", 20, Color.decode("#e96769"), 20));
-        listaHorizontal.add(new BotaoArredondado("Pet Shop", 20, Color.decode("#e96769"), 20));
-        listaHorizontal.add(new BotaoArredondado("Mercado", 20, Color.decode("#e96769"), 20));
-        listaHorizontal.add(new BotaoArredondado("Restaurantes", 20, Color.decode("#e96769"), 20));
-        listaHorizontal.add(new BotaoArredondado("Bebidas", 20, Color.decode("#e96769"), 20));
-        listaHorizontal.add(new BotaoArredondado("Farmácia", 20, Color.decode("#e96769"), 20));
-        listaHorizontal.add(new BotaoArredondado("Pet Shop", 20, Color.decode("#e96769"), 20));
-        // O SCROLL HORIZONTAL
+
+
         JScrollPane scrollHorizontal = new JScrollPane(listaHorizontal);
         scrollHorizontal.setBorder(null);
         scrollHorizontal.setOpaque(true);
@@ -186,30 +345,34 @@ public class TelaPrincipal extends JPanel {
         scrollHorizontal.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         scrollHorizontal.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
 
-        scrollHorizontal.getHorizontalScrollBar().setUnitIncrement(16);
+        scrollHorizontal.getHorizontalScrollBar().setUnitIncrement(20);
         scrollHorizontal.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // --------------------------------------------------------------------------
-        // ADICIONADO: Proteção contra o conflito de Scroll também nas Categorias!
-        // --------------------------------------------------------------------------
+        int largura_desejada = Telabase.Width;
+        int altura = 100;
+        scrollHorizontal.setPreferredSize(new Dimension(largura_desejada,altura));
+        scrollHorizontal.setMinimumSize(new Dimension(largura_desejada,altura));
+        scrollHorizontal.setMaximumSize(new Dimension(largura_desejada,altura));
+
         scrollHorizontal.addMouseWheelListener(e -> {
             JScrollBar bar = scrollHorizontal.getHorizontalScrollBar();
             int cliques = e.getWheelRotation();
-            // Controla o movimento horizontal baseado na rodinha do mouse
+
             int novaPosicao = bar.getValue() + (cliques * bar.getUnitIncrement() * 2);
             bar.setValue(novaPosicao);
 
-            // Alerta o Java que o scroll vertical pai não deve interferir aqui
+
+
             e.consume();
         });
-        // --------------------------------------------------------------------------
 
-        painelSecao.add(scrollHorizontal);
-        return painelSecao;
+        //panel.add(listaHorizontal);
+        panel.add(scrollHorizontal);
+        return panel;
     }
 
     private JPanel criarListaRestaurantes() {
-// 1. O painel principal da seção (GridBagLayout para empilhar o Título e o Carrossel)
+
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(Color.WHITE);
 
@@ -219,19 +382,19 @@ public class TelaPrincipal extends JPanel {
         gbc.weightx = 1.0;
         gbc.anchor = GridBagConstraints.WEST;
 
-        // LINHA 0: O Título da Seção (Fica em cima)
+
         JLabel titulo = new JLabel("Lojas Disponíveis");
         titulo.setFont(new Font("Arial", Font.BOLD, 20));
         gbc.gridy = 0;
-        gbc.insets = new Insets(0, 0, 15, 0); // Espaço de 15px abaixo do título
+        gbc.insets = new Insets(0, 0, 15, 20); // Espaço de 15px abaixo do título
         panel.add(titulo, gbc);
 
-        // LINHA 1: O contêiner que vai alinhar os cards lado a lado (X_AXIS)
+
         JPanel listaHorizontal = new JPanel();
         listaHorizontal.setLayout(new BoxLayout(listaHorizontal, BoxLayout.X_AXIS));
         listaHorizontal.setBackground(Color.WHITE);
 
-        // Adicionando os Cards na horizontal
+
         listaHorizontal.add(new CardRestaurante("Burguer King", "4.7", "15-25 min", "R$ 4,99"));
         listaHorizontal.add(Box.createHorizontalStrut(15)); // Espaço horizontal de 15px entre os cards
 
@@ -259,7 +422,7 @@ public class TelaPrincipal extends JPanel {
 
         listaHorizontal.add(new CardRestaurante("21", "4.3", "20-30 min", "R$ 2,00"));
         listaHorizontal.add(Box.createHorizontalStrut(15));
-        listaHorizontal.setPreferredSize(new Dimension(2500, 100));
+
 
         listaHorizontal.setOpaque(true);
         listaHorizontal.setBackground(Color.WHITE);
@@ -271,30 +434,17 @@ public class TelaPrincipal extends JPanel {
         scrollHorizontal.setBackground(Color.BLACK);
         scrollHorizontal.getViewport().setOpaque(false);
 
-        // TRAVA 3: Define uma altura limite para o Scroll na tela do app
-        scrollHorizontal.setPreferredSize(new Dimension(800, 120));
-        scrollHorizontal.setMinimumSize(new Dimension(100, 120));
+
         scrollHorizontal.getHorizontalScrollBar().setUnitIncrement(40);
-
-        /*
-        BotaoArredondado ir_dir = new BotaoArredondado(">",100,Color.black,50);
-        BotaoArredondado ir_esq = new BotaoArredondado("<",100,Color.GRAY,50);
-
-        ir_dir.addActionListener(e->{
-            JScrollBar bar = scrollHorizontal.getHorizontalScrollBar();
-            int novaPosicao = bar.getValue() + (bar.getUnitIncrement() * 10);
-            bar.setValue(novaPosicao);
-        });
-
-        ir_esq.addActionListener(e->{
-            JScrollBar bar = scrollHorizontal.getHorizontalScrollBar();
-            int novaPosicao = bar.getValue() - (bar.getUnitIncrement() * 10);
-            bar.setValue(novaPosicao);
-        });
+        int largura_desejada = scrollHorizontal.getViewport().getWidth()/4;
+        int altura = 100;
+        scrollHorizontal.setPreferredSize(new Dimension(largura_desejada,altura));
+        scrollHorizontal.setMinimumSize(new Dimension(largura_desejada,altura));
+        scrollHorizontal.setMaximumSize(new Dimension(largura_desejada,altura));
 
 
-         */
         scrollHorizontal.addMouseWheelListener(e -> {
+
             JScrollBar bar = scrollHorizontal.getHorizontalScrollBar();
             int cliques = e.getWheelRotation();
             int novaPosicao = bar.getValue() + (cliques * bar.getUnitIncrement() * 2);
@@ -305,17 +455,7 @@ public class TelaPrincipal extends JPanel {
         gbc.gridy = 1;
         gbc.insets = new Insets(0, 0, 0, 0);
         panel.add(scrollHorizontal, gbc);
-        /*
-        gbc.insets = new Insets(0, 0, 40, 0);
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.gridy = 2;
-        panel.add(ir_esq,gbc);
-        //gbc.gridx = 1;
-        gbc.anchor = GridBagConstraints.EAST;
-        panel.add(ir_dir,gbc);
 
-         */
         return panel;
     }
 

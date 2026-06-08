@@ -5,10 +5,8 @@ import model.Login;
 
 import java.awt.*;
 import java.awt.event.ActionListener;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
-import view.Telabase;
-public class TelaInicial extends JPanel{
+
+public class TelaCadastro extends JPanel{
     JPanel panelesq;
     JPanel paneldir;
     JPanel painelBotoes;
@@ -20,11 +18,11 @@ public class TelaInicial extends JPanel{
     CheckboxCustomizado chk_cliente;
     CheckboxCustomizado chk_entregador;
     CheckboxCustomizado chk_restaurante;
-    public TelaInicial(){
+    public TelaCadastro(){
 
         setLayout(new GridLayout(1,2));
         panelesq = new JPanel();
-        paneldir = new PainelFormulario();
+        paneldir = new PainelFormulario(Telabase.Width/2,Telabase.Height,Color.WHITE);
         this.setBackground(Color.decode("#e96769"));
         panelesq.setBackground(Color.decode("#e96769"));
         ImageIcon banner = new ImageIcon("img/banner_delivery.jpg");
@@ -53,6 +51,13 @@ public class TelaInicial extends JPanel{
 
         gbc.gridy = 1;
 
+        txt = new Texto("Cadastro");
+        txt.setFont(new Font("Arial",Font.BOLD,60));
+        paneldir.add(txt,gbc);
+        gbc.gridy++;
+        paneldir.add(Box.createVerticalStrut(40),gbc);
+        //paneldir.add(Box.createVerticalStrut(30));
+        gbc.gridy++;
         txt = new Texto("Usuario:");
         txt.setFont(new Font("Arial", Font.BOLD, 30));
 
@@ -150,12 +155,31 @@ public class TelaInicial extends JPanel{
                             "\nTipo:"+str_tipo);
 
                     Login.cadastrarUsuario(str_usuario,str_email,str_senha,str_tipo);
-                    Login.realizarLogin(str_email,str_senha);
+
 
                     TelaPrincipal tl = new TelaPrincipal();
                     Telabase sist = (Telabase) SwingUtilities.getWindowAncestor(this);
                     if(sist != null)
                         sist.configuraTela(tl);
+            }
+        });
+        sair.addActionListener(e -> {
+            Object[] opcoes = {"Sim", "Não"};
+
+            int resposta = JOptionPane.showOptionDialog(
+                    this,
+                    "Você realmente deseja sair?",
+                    "Confirmação",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,             // Usa o ícone padrão
+                    opcoes,           // Array com os textos dos botões
+                    opcoes[0]         // Botão focado por padrão (Sim)
+            );
+
+            if (resposta == JOptionPane.YES_OPTION) {
+                // Código para sair...
+                System.exit(0); // Fecha o programa completamente, se preferir
             }
         });
         this.add(panelesq);
