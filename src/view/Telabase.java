@@ -71,6 +71,7 @@ class BotaoArredondado extends JButton {
         setBackground(cor);
         setForeground(Color.WHITE);             // Texto Branco
         setFont(new Font("Arial", Font.BOLD, tam));
+        setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         setContentAreaFilled(false);
         setFocusPainted(false);
@@ -343,5 +344,26 @@ class CardRestaurante extends JPanel {
 
         // Transforma o card todo em um botão clicável visualmente
         setCursor(new Cursor(Cursor.HAND_CURSOR));
+    }
+}
+class Overlay extends JPanel {
+
+    public Overlay() {
+        setOpaque(false);
+        setVisible(false);
+        // Bloqueia cliques do mouse no resto do cinza para o usuário não clicar no feed sem querer
+        //addMouseListener(new MouseAdapter() {});
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        Graphics2D g2 = (Graphics2D) g.create();
+
+
+        g2.setColor(new Color(40, 40, 40, 160));
+        g2.fillRect(0, 0, getWidth(), getHeight());
+
+        g2.dispose();
     }
 }

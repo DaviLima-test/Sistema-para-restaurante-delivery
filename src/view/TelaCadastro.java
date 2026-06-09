@@ -105,13 +105,19 @@ public class TelaCadastro extends JPanel{
         painelBotoes.setOpaque(false);
         BotaoArredondado cadastrar = new BotaoArredondado("Cadastrar",20 , Color.decode("#c1291e"),35);
         BotaoArredondado sair = new BotaoArredondado("Sair",20 , Color.decode("#c1291e"),35);
-
+        BotaoArredondado voltar = new BotaoArredondado("Voltar",20,Color.decode("#c1291e"),35);
         painelBotoes.add(sair);
+        painelBotoes.add(voltar);
         painelBotoes.add(cadastrar);
         paneldir.add(painelBotoes,gbc);
         cadastrar.setEnabled(false);
 
-
+        voltar.addActionListener(e -> {
+            TelaLogin tl = new TelaLogin();
+            Telabase sist = (Telabase) SwingUtilities.getWindowAncestor(this);
+            if(sist != null)
+                sist.configuraTela(tl);
+        });
         ActionListener gerenciarBotao = e -> {
             // Se QUALQUER UMA das caixas estiver marcada, ativa o botão. Senão, desativa.
             int int_cliente = (chk_cliente.isSelected())?1:0;

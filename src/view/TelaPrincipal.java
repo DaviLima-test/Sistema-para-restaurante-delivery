@@ -13,116 +13,135 @@ import static java.awt.SystemColor.scrollbar;
 
 public class TelaPrincipal extends JPanel {
     private boolean menu_aberto = false;
+    private JLayeredPane camadas;
+    private JPanel conteudoApp;
     private JPanel conteudoInterno;
     private JPanel barra_lateral;
+    private JPanel header;
+    private Overlay overlay;
+    private Telabase sist;
     public TelaPrincipal() {
-
-
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
 
+        // 1. Inicializa o Painel de Camadas principal
+        camadas = new JLayeredPane();
+        add(camadas, BorderLayout.CENTER);
+
+        // 2. Inicializa o Container Principal do App (Camada de Fundo)
+        conteudoApp = new JPanel();
+        conteudoApp.setBackground(Color.WHITE);
+        conteudoApp.setLayout(new BorderLayout());
+
+        // 3. Inicializa a Barra Lateral (Camada de Frente)
         barra_lateral = new JPanel();
-        barra_lateral.setLayout(new BoxLayout(barra_lateral,BoxLayout.Y_AXIS));
+        barra_lateral.setLayout(new BoxLayout(barra_lateral, BoxLayout.Y_AXIS));
+        barra_lateral.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2, true));
         barra_lateral.setBackground(Color.WHITE);
+        barra_lateral.setVisible(false); // Começa escondida até clicar no hambúrguer
+
+        // --- ADICIONANDO ITENS AO MENU ---
         adicionarItemMenu("Perfil", new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
+                // Ação do Perfil
             }
         });
         adicionarItemMenu("Carrinho", new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
+                // Ação do Carrinho
             }
         });
         adicionarItemMenu("Pedidos", new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
+                // Ação dos Pedidos
             }
         });
         adicionarItemMenu("Carteira", new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
+                // Ação da Carteira
             }
         });
 
-
-        if(Login.GetTipo().equals(("restaurante"))){
+        // Verificações seguras contra NullPointerException
+        if ("restaurante".equals(Login.GetTipo())) {
             adicionarItemMenu("Gerenciar restaurante", new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-
+                    // Ação do Restaurante
                 }
             });
-          ;
         }
-        if(Login.GetTipo().equals("entregador")){
+        if ("entregador".equals(Login.GetTipo())) {
             adicionarItemMenu("Pedidos a serem entregues", new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-
+                    // Ação do Entregador
                 }
             });
-
         }
+
         adicionarItemMenu("Logout(APAGA O COOKIE DE SESSAO)", new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 Object[] opcoes = {"Sim", "Não"};
-
                 int resposta = JOptionPane.showOptionDialog(
-                        null,
+                        SwingUtilities.getWindowAncestor(barra_lateral), // Pai real da janela
                         "Você realmente deseja apagar os cookies?",
                         "Confirmação",
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.QUESTION_MESSAGE,
-                        null,             // Usa o ícone padrão
-                        opcoes,           // Array com os textos dos botões
-                        opcoes[0]         // Botão focado por padrão (Sim)
+                        null, opcoes, opcoes[0]
                 );
 
                 if (resposta == JOptionPane.YES_OPTION) {
                     Login.apagarCookie();
-                    System.exit(0); // Fecha o programa completamente, se preferir
+                    System.exit(0);
                 }
             }
         });
+
         adicionarItemMenu("Sair", new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                    Object[] opcoes = {"Sim", "Não"};
+                Object[] opcoes = {"Sim", "Não"};
+                int resposta = JOptionPane.showOptionDialog(
+                        SwingUtilities.getWindowAncestor(barra_lateral), // Pai real da janela
+                        "Você realmente deseja sair?",
+                        "Confirmação",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        null, opcoes, opcoes[0]
+                );
 
-                    int resposta = JOptionPane.showOptionDialog(
-                            null,
-                            "Você realmente deseja sair?",
-                            "Confirmação",
-                            JOptionPane.YES_NO_OPTION,
-                            JOptionPane.QUESTION_MESSAGE,
-                            null,             // Usa o ícone padrão
-                            opcoes,           // Array com os textos dos botões
-                            opcoes[0]         // Botão focado por padrão (Sim)
-                    );
-
-                    if (resposta == JOptionPane.YES_OPTION) {
-                        // Código para sair...
-                        System.exit(0); // Fecha o programa completamente, se preferir
-                    }
-
+                if (resposta == JOptionPane.YES_OPTION) {
+                    System.exit(0);
+                }
             }
         });
-        barra_lateral.setPreferredSize(new Dimension(0,0));
-        add(barra_lateral,BorderLayout.WEST);
 
-        JPanel header = criarHeader();
-        add(header, BorderLayout.NORTH);
+        // 4. Inicializa o Overlay (Camada do Meio)
+        overlay = new Overlay();
+        overlay.setVisible(false);
+        overlay.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                // Fecha o menu se clicar no espaço cinza
+                menu_aberto = false;
+                overlay.setVisible(false);
+                barra_lateral.setVisible(false);
+                camadas.repaint();
+            }
+        });
 
+        // 5. Montagem do Cabeçalho e Conteúdo Interno do Feed
+        header = criarHeader();
+        conteudoApp.add(header, BorderLayout.NORTH);
 
         conteudoInterno = new JPanel();
-        // Mudamos para GridBagLayout aqui para termos controle total das linhas
-
         conteudoInterno.setLayout(new GridBagLayout());
         conteudoInterno.setBackground(Color.WHITE);
         conteudoInterno.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
@@ -131,62 +150,80 @@ public class TelaPrincipal extends JPanel {
         gbc.gridx = 0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
-        gbc.anchor = GridBagConstraints.NORTHWEST; // Força os componentes a nascerem no Topo-Esquerda
+        gbc.anchor = GridBagConstraints.NORTHWEST;
 
-        // Linha 0: Seção de Categorias
+        // Linha 0: Categorias
         gbc.gridy = 0;
-        gbc.weighty = 0.0; // Zera o peso para não empurrar para baixo
-        gbc.insets = new Insets(0, 0, 25, 0); // Margem de 25px abaixo das categorias
+        gbc.weighty = 0.0;
+        gbc.insets = new Insets(0, 0, 25, 0);
         conteudoInterno.add(criarSecaoCategorias(), gbc);
 
         // Linha 1: Lista de Restaurantes
         gbc.gridy = 1;
-        gbc.weighty = 0.0; // Mantém em zero
+        gbc.weighty = 0.0;
         gbc.insets = new Insets(0, 0, 25, 0);
         conteudoInterno.add(criarListaRestaurantes(), gbc);
 
-
+        // Linha 2: Mola Invisível para empurrar itens para cima
         gbc.gridy = 2;
         gbc.weighty = 1.0;
         JPanel molaInvisivel = new JPanel();
         molaInvisivel.setOpaque(false);
         conteudoInterno.add(molaInvisivel, gbc);
 
-        // Criando o scroll principal do Feed
+        // Configurando o Scroll do Feed
         JScrollPane scroll = new JScrollPane(conteudoInterno);
-
-
         scroll.setBorder(null);
-
-
         scroll.getVerticalScrollBar().setUnitIncrement(30);
         scroll.getHorizontalScrollBar().setUnitIncrement(18);
         scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-
-
         scroll.setOpaque(false);
         scroll.getViewport().setOpaque(false);
 
-        JPanel panel = new JPanel(new GridLayout(1,1));
-        add(scroll, BorderLayout.CENTER);
-        BotaoArredondado btn = new BotaoArredondado("Trocar de tela",30,Color.GRAY , 50);
+        conteudoApp.add(scroll, BorderLayout.CENTER);
+
+        // 6. Painel inferior com o botão de "Trocar de Tela"
+        JPanel panel = new JPanel(new GridLayout(1, 1));
+        BotaoArredondado btn = new BotaoArredondado("Trocar de tela", 30, Color.GRAY, 50);
         btn.addActionListener(e -> {
             TelaLogin ln = new TelaLogin();
-            Telabase sist = (Telabase) SwingUtilities.getWindowAncestor(this);
-            if(sist != null){
+            sist = (Telabase) SwingUtilities.getWindowAncestor(this);
+            if (sist != null) {
                 sist.configuraTela(ln);
             }
         });
+        panel.add(btn);
+        conteudoApp.add(panel, BorderLayout.AFTER_LAST_LINE);
+
+        // 7. ADICIONANDO AS TRÊS CAMADAS NO JLAYEREDPANE
+        camadas.add(conteudoApp, JLayeredPane.DEFAULT_LAYER);  // Camada 0 (Fundo)
+        camadas.add(overlay, JLayeredPane.PALETTE_LAYER);      // Camada 100 (Meio)
+        camadas.add(barra_lateral, JLayeredPane.MODAL_LAYER);  // Camada 200 (Frente)
+
+        // 8. Ouvinte para ajustar dinamicamente o tamanho das camadas do LayeredPane
+        camadas.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                int largura = camadas.getWidth();
+                int altura = camadas.getHeight();
+
+                // CORREÇÃO AQUI: conteúdo completo do app e o overlay preenchem a tela inteira
+                conteudoApp.setBounds(0, 0, largura, altura);
+                overlay.setBounds(0, 0, largura, altura);
+
+                // A barra lateral ocupa a altura inteira com tamanho fixo
+                barra_lateral.setBounds(0, 0, 250, altura);
+            }
+        });
+
+        // Ouvinte para ajustar a responsividade dos itens internos do feed
         this.addComponentListener(new java.awt.event.ComponentAdapter() {
             @Override
             public void componentResized(java.awt.event.ComponentEvent e) {
                 ajustarLarguraDoFeed();
             }
         });
-        panel.add(btn);
-        add(panel,BorderLayout.AFTER_LAST_LINE);
-        //conteudoInterno.add(panel,gbc);
     }
     private void ajustarLarguraDoFeed() {
         // 1. Pega a largura total atual da janela
@@ -264,22 +301,28 @@ public class TelaPrincipal extends JPanel {
             public void actionPerformed(ActionEvent e) {
             menu_aberto = !menu_aberto;
 
-                System.out.println(menu_aberto);
             if(menu_aberto){
+                overlay.setVisible(true);
                 barra_lateral.setPreferredSize(new Dimension(250,0));
                 barra_lateral.setVisible(true);
-
+                //conteudoInterno.setBackground(new Color(40, 40, 40));
             }else{
-                System.out.println("Deu aqui");
+                //System.out.println("Deu aqui");
+                overlay.setVisible(false);
                 barra_lateral.setPreferredSize(new Dimension(0,0));
                 barra_lateral.setVisible(false);
+
+                //conteudoInterno.setBackground(Color.WHITE);
             }
+            overlay.setVisible(menu_aberto);
             ajustarLarguraDoFeed();
             Container paneltop = p.getTopLevelAncestor();
             if(paneltop != null) {
                 paneltop.revalidate();
                 paneltop.repaint();
             }
+            camadas.repaint();
+
             }
 
         });
