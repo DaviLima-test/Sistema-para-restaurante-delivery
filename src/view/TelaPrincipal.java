@@ -41,17 +41,15 @@ public class TelaPrincipal extends JPanel {
         barra_lateral.setVisible(false); // Começa escondida até clicar no hambúrguer
 
         // --- ADICIONANDO ITENS AO MENU ---
-        adicionarItemMenu("Perfil", new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // Ação do Perfil
-            }
+        adicionarItemMenu("Perfil", e -> {
+            TelaPerfil tp = new TelaPerfil();
+            sist = (Telabase) SwingUtilities.getWindowAncestor(this);
+            if (sist != null) {
+                sist.configuraTela(tp);
+        }
         });
-        adicionarItemMenu("Carrinho", new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // Ação do Carrinho
-            }
+        adicionarItemMenu("Carrinho", e -> {
+
         });
         adicionarItemMenu("Pedidos", new ActionListener() {
             @Override
@@ -194,7 +192,7 @@ public class TelaPrincipal extends JPanel {
             }
         });
         panel.add(btn);
-        conteudoApp.add(panel, BorderLayout.AFTER_LAST_LINE);
+        conteudoApp.add(panel, BorderLayout.SOUTH);
 
         // 7. ADICIONANDO AS TRÊS CAMADAS NO JLAYEREDPANE
         camadas.add(conteudoApp, JLayeredPane.DEFAULT_LAYER);  // Camada 0 (Fundo)
@@ -216,7 +214,11 @@ public class TelaPrincipal extends JPanel {
                 barra_lateral.setBounds(0, 0, 250, altura);
             }
         });
-
+        int larguraInicial = Telabase.Width ;
+        int alturaInicial = Telabase.Height; // Altura padrão aproximada caso não encontre
+        conteudoApp.setBounds(0, 0, larguraInicial, alturaInicial);
+        overlay.setBounds(0, 0, larguraInicial, alturaInicial);
+        barra_lateral.setBounds(0, 0, 250, alturaInicial);
         // Ouvinte para ajustar a responsividade dos itens internos do feed
         this.addComponentListener(new java.awt.event.ComponentAdapter() {
             @Override
@@ -268,9 +270,17 @@ public class TelaPrincipal extends JPanel {
 
 
         p.add(bnt_hambuger,gbc);
-        JLabel logo = new JLabel("AIFood");
+        Texto logo = new Texto("AIFood");
         logo.setFont(new Font("Arial", Font.BOLD, 30));
         logo.setForeground(new Color(234, 16, 34)); // Vermelho iFood
+        logo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        logo.addMouseListener(new java.awt.event.MouseAdapter(){
+            @Override
+            public void mouseClicked(MouseEvent e) {
+
+
+            }
+        });
         gbc.gridx = 1;
         p.add(logo, gbc);
 
@@ -324,6 +334,7 @@ public class TelaPrincipal extends JPanel {
             camadas.repaint();
 
             }
+
 
         });
         p.add(busca, gbc);

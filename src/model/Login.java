@@ -29,7 +29,7 @@ public class Login {
         this.User = user;
         this.tipo = tipo;
 }
-public String GetUser() {
+public static String GetUser() {
     if(User.isEmpty()) {
         if (Email.isEmpty() || Senha.isEmpty()) {
             System.out.println("Nao ha como requerir pois alguma das variáveis está sem o ngc");
@@ -66,7 +66,7 @@ public String GetUser() {
 
     }
 
-    public String MudarSenha() {
+    private String MudarSenha() {
         return "Senha alterada com sucesso.";
     }
 
