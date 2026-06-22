@@ -1,6 +1,8 @@
 package view;
 
 import javax.swing.*;
+
+import bd.BancoDados;
 import model.Login;
 
 import java.awt.*;
@@ -160,7 +162,7 @@ public class TelaCadastro extends JPanel{
                             "\nSenha:"+str_senha.length()+
                             "\nTipo:"+str_tipo);
 
-                    Login.cadastrarUsuario(str_usuario,str_email,str_senha,str_tipo);
+                    BancoDados.cadastrarUsuario(str_usuario,str_email,str_senha,str_tipo);
 
 
                     Telabase sist = (Telabase) SwingUtilities.getWindowAncestor(this);

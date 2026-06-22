@@ -1,9 +1,6 @@
 package model;
 
 
-import javax.swing.*;
-import java.awt.*;
-
 public class Gerente extends Login {
 
     public Gerente(String email, String senha, String user) {

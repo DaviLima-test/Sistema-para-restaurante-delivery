@@ -9,7 +9,7 @@ public abstract class TelaMenu extends JPanel {
     protected boolean menu_aberto = false;
     private JLayeredPane camadas;
     private JPanel barra_lateral;
-    private Overlay overlay;          // Removido o private para inicializar corretamente
+    private Overlay overlay;
     private JPanel conteudoApp;       // Container de fundo que segura o Header + Conteúdo da filha
     private JPanel conteudoInterno;   // O conteúdo específico que a classe filha vai injetar
     private Telabase sist;
@@ -19,8 +19,25 @@ public abstract class TelaMenu extends JPanel {
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
 
-        // 1. Inicializa o Painel de Camadas principal
-        camadas = new JLayeredPane();
+        // 1. Inicializa o Painel de Camadas principal SOBRESCREVENDO o doLayout()
+        // Isso atua como um Layout Manager rígido que impede saltos ou encolhimento de componentes
+        camadas = new JLayeredPane() {
+            @Override
+            public void doLayout() {
+                int largura = getWidth();
+                int altura = getHeight();
+
+                if (conteudoApp != null) {
+                    conteudoApp.setBounds(0, 0, largura, altura);
+                }
+                if (overlay != null) {
+                    overlay.setBounds(0, 0, largura, altura);
+                }
+                if (barra_lateral != null) {
+                    barra_lateral.setBounds(0, 0, 250, altura); // Mantém a barra lateral com 250px fixos de largura
+                }
+            }
+        };
         add(camadas, BorderLayout.CENTER);
 
         // 2. Inicializa o Container Principal do App (Camada de Fundo)
@@ -28,7 +45,7 @@ public abstract class TelaMenu extends JPanel {
         conteudoApp.setBackground(Color.WHITE);
 
         // 3. Inicializa o Overlay (Camada do Meio) e adiciona o clique para fechar
-        overlay = new Overlay(); // Correção: Instanciado corretamente
+        overlay = new Overlay();
         overlay.setVisible(false);
         overlay.addMouseListener(new MouseAdapter() {
             @Override
@@ -53,39 +70,11 @@ public abstract class TelaMenu extends JPanel {
         camadas.add(overlay, JLayeredPane.PALETTE_LAYER);      // Camada 100
         camadas.add(barra_lateral, JLayeredPane.MODAL_LAYER);  // Camada 200
 
-        // Ouvinte para garantir que os componentes preencham a tela inteira ao redimensionar
-        camadas.addComponentListener(new ComponentAdapter() {
-            @Override
-            public void componentResized(ComponentEvent e) {
-                int largura = camadas.getWidth();
-                int altura = camadas.getHeight();
+        // NOTA: O ComponentListener antigo e os setBounds iniciais engessados foram removidos,
+        // pois o doLayout() acima assume o controle total dinamicamente.
 
-                conteudoApp.setBounds(0, 0, largura, altura);
-                overlay.setBounds(0, 0, largura, altura);
-                barra_lateral.setBounds(0, 0, 250, altura);
-            }
-        });
-
-        // Ouvinte na própria tela para ajustar o Feed dinamicamente
-        this.addComponentListener(new ComponentAdapter() {
-            @Override
-            public void componentResized(ComponentEvent e) {
-                ajustarLarguraDoFeed();
-            }
-        });
-        // ... Dentro do construtor de TelaMenu, logo após os métodos camadas.add(...) ...
-
-// Força o tamanho inicial baseado nas variáveis estáticas da Telabase
-        int w = view.Telabase.Width;
-        int h = view.Telabase.Height;
-
-        conteudoApp.setBounds(0, 0, w, h);
-        overlay.setBounds(0, 0, w, h);
-        barra_lateral.setBounds(0, 0, 250, h);
         iniciaMenu();
-
     }
-
 
     private JPanel criarHeader() {
         JPanel p = new JPanel(new GridBagLayout());
@@ -117,22 +106,19 @@ public abstract class TelaMenu extends JPanel {
         logo.addMouseListener(new java.awt.event.MouseAdapter(){
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
-                // --- COLOQUE A SUA AÇÃO AQUI ---
-                System.out.println("O usuário clicou no nome: " + Login.GetUser());
                 if (sist != null) {
-                    sist.configuraTela(new TelaPrincipal(sist)); // Abre a tela de perfil
+                    sist.configuraTela(new TelaPrincipal(sist));
                 }
             }
 
-            // OPCIONAL: Se quiser fazer o texto mudar de cor ao passar o mouse por cima (efeito hover)
             @Override
             public void mouseEntered(java.awt.event.MouseEvent e) {
-                logo.setForeground(new Color(240, 240, 240)); // Fica um cinza claro
+                logo.setForeground(new Color(240, 240, 240));
             }
 
             @Override
             public void mouseExited(java.awt.event.MouseEvent e) {
-                logo.setForeground(new Color(234, 16, 34)); // Volta a ser branco puro
+                logo.setForeground(new Color(234, 16, 34));
             }
         });
         gbc.gridx = 1;
@@ -164,33 +150,39 @@ public abstract class TelaMenu extends JPanel {
         p.add(busca, gbc);
         return p;
     }
-        protected void setConteudoInterno(JPanel painelFilho) {
+
+    protected void setConteudoInterno(JPanel painelFilho) {
         this.conteudoInterno = painelFilho;
         conteudoApp.add(painelFilho, BorderLayout.CENTER);
-        ajustarLarguraDoFeed();
+
+        conteudoApp.revalidate();
+        conteudoApp.repaint();
     }
 
     public void iniciaMenu() {
         adicionarItemMenu("Perfil", e -> {
             if(sist != null) {
-                System.out.println("Passo pela sist aqui");
                 TelaPerfil tp = new TelaPerfil(sist);
                 sist.configuraTela(tp);
             }
         });
         adicionarItemMenu("Carrinho", e -> {
-
+            TelaCarrinho tc = new TelaCarrinho(sist);
+            sist.configuraTela(tc);
         });
-        adicionarItemMenu("Meus pedidos", e -> {/* Ação dos Pedidos */});
+        adicionarItemMenu("Meus pedidos", e -> {
+            TelaPedidosCliente tp =new TelaPedidosCliente(sist);
+            sist.configuraTela(tp);
+        });
         adicionarItemMenu("Carteira", e -> {
             TelaCarteira tc = new TelaCarteira(sist);
             sist.configuraTela(tc);
         });
 
-        if ("restaurante".equals(Login.GetTipo())) {
-            adicionarItemMenu("Gerenciar restaurante", e -> {/* Ação do Restaurante */});
+        if ("restaurante".equals(Telabase.getLogin().GetTipo())) {
+            adicionarItemMenu("Gerenciar restaurante", e -> {});
         }
-        if ("entregador".equals(Login.GetTipo())) {
+        if ("entregador".equals(Telabase.getLogin().GetTipo())) {
             adicionarItemMenu("Pedidos a serem entregues", e -> {
                 TelaPedidosEntregador tp = new TelaPedidosEntregador(sist);
                 sist.configuraTela(tp);
@@ -229,39 +221,14 @@ public abstract class TelaMenu extends JPanel {
     private void configurarMenu(boolean abrir) {
         menu_aberto = abrir;
 
+        // Apenas alternamos a visibilidade das camadas sobrepostas
         overlay.setVisible(menu_aberto);
-        if (menu_aberto) {
-            barra_lateral.setPreferredSize(new Dimension(250, 0));
-            barra_lateral.setVisible(true);
-        } else {
-            barra_lateral.setPreferredSize(new Dimension(0, 0));
-            barra_lateral.setVisible(false);
-        }
+        barra_lateral.setVisible(menu_aberto);
 
-        ajustarLarguraDoFeed();
+        // Removidas as linhas antigas de 'setPreferredSize(..., 0)' que quebravam o layout do BoxLayout interno
 
-        Container paneltop = SwingUtilities.getWindowAncestor(this);
-        if (paneltop != null) {
-            paneltop.revalidate();
-            paneltop.repaint();
-        }
+        // Dispara a revalidação a partir do gerenciador de camadas para forçar a execução estável do doLayout()
+        camadas.revalidate();
         camadas.repaint();
     }
-
-
-    private void ajustarLarguraDoFeed() {
-        // Proteção contra NullPointerException caso a classe filha ainda não tenha injetado o painel
-        if (conteudoInterno == null) return;
-
-        int larguraDisponivel = Telabase.Width;
-        if (menu_aberto) {
-            //larguraDisponivel -= 250;
-        }
-        //larguraDisponivel -= 20;
-
-        int alturaAtual = conteudoInterno.getPreferredSize().height;
-        conteudoInterno.setPreferredSize(new Dimension(larguraDisponivel, alturaAtual));
-        conteudoInterno.revalidate();
-    }
-
 }

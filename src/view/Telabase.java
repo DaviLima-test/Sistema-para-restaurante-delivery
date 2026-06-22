@@ -1,18 +1,17 @@
 package view;
 
+import model.Login;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
 import java.io.File;
-import java.net.URL;
 
 public class Telabase extends JFrame {
     public static int Width;
     public static int Height;
     private int raioDoArredondamento;
-
+    private static Login login;
     public Telabase(){
         setTitle("AiFome");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -60,6 +59,14 @@ public class Telabase extends JFrame {
         botao.setOpaque(true);
         botao.setContentAreaFilled(true);
 
+    }
+
+    public static Login getLogin() {
+        return Telabase.login;
+    }
+
+    public static void setLogin(Login login) {
+        Telabase.login = login;
     }
 }
 class BotaoArredondado extends JButton {

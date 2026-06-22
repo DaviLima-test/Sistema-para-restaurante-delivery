@@ -1,5 +1,7 @@
 package view;
 
+import model.Cartao;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -23,10 +25,10 @@ public class TelaCarteira extends TelaMenu {
     private static List<Cartao> listaCartoesMemoria;
 
     // Cores padrão do seu projeto
-    private static final Color COR_PRIMARIA   = new Color(234, 16, 34);
-    private static final Color COR_VERDE      = new Color(46, 174, 82);
-    private static final Color COR_CINZA_BG   = new Color(245, 245, 245);
-    private static final Color COR_BORDA      = new Color(230, 230, 230);
+    private static final Color COR_PRIMARIA = new Color(234, 16, 34);
+    private static final Color COR_VERDE = new Color(46, 174, 82);
+    private static final Color COR_CINZA_BG = new Color(245, 245, 245);
+    private static final Color COR_BORDA = new Color(230, 230, 230);
     private static final Color COR_CARD_HOVER = new Color(255, 242, 242);
 
     public TelaCarteira(Telabase sist) {
@@ -35,7 +37,7 @@ public class TelaCarteira extends TelaMenu {
 
         // Inicializa dados fictícios se a lista estiver vazia
         if (listaCartoesMemoria == null) {
-            inicializarCartoesDemo();
+            inicializarCartoes();
         }
 
         // Container raiz desta tela
@@ -146,7 +148,9 @@ public class TelaCarteira extends TelaMenu {
         // Ícone decorativo baseado na bandeira
         JLabel lblIcon = new JLabel("💳");
         lblIcon.setFont(new Font("Arial", Font.PLAIN, 28));
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridheight = 2;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridheight = 2;
         gbc.insets = new Insets(0, 0, 0, 14);
         card.add(lblIcon, gbc);
 
@@ -156,7 +160,9 @@ public class TelaCarteira extends TelaMenu {
         // Nome mascarado do cartão (Ex: **** **** **** 4521)
         JLabel lblNome = new JLabel("•••• •••• •••• " + c.getQuatroUltimosDigitos());
         lblNome.setFont(new Font("Arial", Font.BOLD, 15));
-        gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 1.0;
+        gbc.gridx = 1;
+        gbc.gridy = 0;
+        gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         card.add(lblNome, gbc);
 
@@ -165,7 +171,9 @@ public class TelaCarteira extends TelaMenu {
             JLabel lblStatus = new JLabel("● Principal");
             lblStatus.setFont(new Font("Arial", Font.BOLD, 12));
             lblStatus.setForeground(COR_VERDE);
-            gbc.gridx = 2; gbc.gridy = 0; gbc.weightx = 0;
+            gbc.gridx = 2;
+            gbc.gridy = 0;
+            gbc.weightx = 0;
             gbc.fill = GridBagConstraints.NONE;
             gbc.insets = new Insets(0, 10, 3, 0);
             card.add(lblStatus, gbc);
@@ -174,17 +182,29 @@ public class TelaCarteira extends TelaMenu {
         JLabel lblDetalhe = new JLabel(c.getBandeira().toUpperCase() + "  •  Vencimento: " + c.getValidade());
         lblDetalhe.setFont(new Font("Arial", Font.PLAIN, 12));
         lblDetalhe.setForeground(Color.GRAY);
-        gbc.gridx = 1; gbc.gridy = 1; gbc.weightx = 1.0;
-        gbc.gridwidth = 2; gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        gbc.weightx = 1.0;
+        gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(0, 0, 0, 0);
         card.add(lblDetalhe, gbc);
 
         card.addMouseListener(new MouseAdapter() {
-            @Override public void mouseEntered(MouseEvent e) { card.setBackground(COR_CARD_HOVER); }
-            @Override public void mouseExited(MouseEvent e)  {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                card.setBackground(COR_CARD_HOVER);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
                 card.setBackground(c == cartaoSelecionado ? COR_CARD_HOVER : Color.WHITE);
             }
-            @Override public void mouseClicked(MouseEvent e) { selecionarCartao(c); }
+
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                selecionarCartao(c);
+            }
         });
 
         return card;
@@ -228,11 +248,11 @@ public class TelaCarteira extends TelaMenu {
 
         // Seção Visual Simulando um Cartão Físico
         painel.add(criarSecao("💳  Dados do Método de Pagamento", new String[][]{
-                {"Bandeira",     c.getBandeira().toUpperCase()},
-                {"Número",       "•••• •••• •••• " + c.getQuatroUltimosDigitos()},
-                {"Titular",      c.getTitular().toUpperCase()},
-                {"Validade",     c.getValidade()},
-                {"Status",       c.isPrincipal() ? "Método Principal de Cobrança" : "Opcional"}
+                {"Bandeira", c.getBandeira().toUpperCase()},
+                {"Número", "•••• •••• •••• " + c.getQuatroUltimosDigitos()},
+                {"Titular", c.getTitular().toUpperCase()},
+                {"Validade", c.getValidade()},
+                {"Status", c.isPrincipal() ? "Método Principal de Cobrança" : "Opcional"}
         }));
 
         painel.add(Box.createVerticalGlue());
@@ -278,31 +298,41 @@ public class TelaCarteira extends TelaMenu {
         painel.add(Box.createVerticalStrut(15));
 
         // Campos do Formulário
-        JTextField txtNumero  = criarCampoTextoForm("Número do Cartão (16 dígitos)");
+        JTextField txtNumero = criarCampoTextoForm("Número do Cartão (16 dígitos)");
         JTextField txtTitular = criarCampoTextoForm("Nome Completo do Titular");
         JTextField txtValidade = criarCampoTextoForm("Validade (MM/AA)");
-        JTextField txtCVV      = criarCampoTextoForm("Código CVV (3 dígitos)");
+        JTextField txtCVV = criarCampoTextoForm("Código CVV (3 dígitos)");
         JTextField txtBandeira = criarCampoTextoForm("Bandeira (Visa, Mastercard...)");
 
-        painel.add(new JLabel("Número do Cartão:")); painel.add(txtNumero); painel.add(Box.createVerticalStrut(8));
-        painel.add(new JLabel("Nome do Titular (como impresso):")); painel.add(txtTitular); painel.add(Box.createVerticalStrut(8));
+        painel.add(new JLabel("Número do Cartão:"));
+        painel.add(txtNumero);
+        painel.add(Box.createVerticalStrut(8));
+        painel.add(new JLabel("Nome do Titular (como impresso):"));
+        painel.add(txtTitular);
+        painel.add(Box.createVerticalStrut(8));
 
         // Linha dividida para Validade e CVV
         JPanel linhaDividida = new JPanel(new GridLayout(1, 2, 10, 0));
         linhaDividida.setOpaque(false);
         linhaDividida.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
 
-        JPanel pVal = new JPanel(new BorderLayout()); pVal.setOpaque(false);
-        pVal.add(new JLabel("Validade:"), BorderLayout.NORTH); pVal.add(txtValidade, BorderLayout.CENTER);
+        JPanel pVal = new JPanel(new BorderLayout());
+        pVal.setOpaque(false);
+        pVal.add(new JLabel("Validade:"), BorderLayout.NORTH);
+        pVal.add(txtValidade, BorderLayout.CENTER);
 
-        JPanel pCvv = new JPanel(new BorderLayout()); pCvv.setOpaque(false);
-        pCvv.add(new JLabel("CVV:"), BorderLayout.NORTH); pCvv.add(txtCVV, BorderLayout.CENTER);
+        JPanel pCvv = new JPanel(new BorderLayout());
+        pCvv.setOpaque(false);
+        pCvv.add(new JLabel("CVV:"), BorderLayout.NORTH);
+        pCvv.add(txtCVV, BorderLayout.CENTER);
 
         linhaDividida.add(pVal);
         linhaDividida.add(pCvv);
-        painel.add(linhaDividida); painel.add(Box.createVerticalStrut(8));
+        painel.add(linhaDividida);
+        painel.add(Box.createVerticalStrut(8));
 
-        painel.add(new JLabel("Bandeira:")); painel.add(txtBandeira);
+        painel.add(new JLabel("Bandeira:"));
+        painel.add(txtBandeira);
 
         painel.add(Box.createVerticalGlue());
         painel.add(Box.createVerticalStrut(20));
@@ -436,43 +466,14 @@ public class TelaCarteira extends TelaMenu {
         }
     }
 
-    private void inicializarCartoesDemo() {
-        listaCartoesMemoria = new ArrayList<>();
-        listaCartoesMemoria.add(new Cartao("4532111198765432", "Fulano de C Silva", "11/29", "123", "Visa", true));
-        listaCartoesMemoria.add(new Cartao("5412765432109876", "Fulano de C Silva", "05/31", "987", "Mastercard", false));
+    private void inicializarCartoes() {
+        if(listaCartoesMemoria == null || listaCartoesMemoria.isEmpty()){
+            listaCartoesMemoria=Cartao.getCartoes();
+        }
+
     }
 
     // ─────────────────────────────────────────────────────────
     //  MODELO INTERNO DE CARTÃO DE CRÉDITO
     // ─────────────────────────────────────────────────────────
-    public static class Cartao {
-        private String numero;
-        private String titular;
-        private String validade;
-        private String cvv;
-        private String bandeira;
-        private boolean principal;
-
-        public Cartao(String numero, String titular, String validade, String cvv, String bandeira, boolean principal) {
-            this.numero = numero;
-            this.titular = titular;
-            this.validade = validade;
-            this.cvv = cvv;
-            this.bandeira = bandeira;
-            this.principal = principal;
-        }
-
-        public String getQuatroUltimosDigitos() {
-            if (numero == null || numero.length() < 4) return "0000";
-            return numero.substring(numero.length() - 4);
-        }
-
-        public String getNumero() { return numero; }
-        public String getTitular() { return titular; }
-        public String getValidade() { return validade; }
-        public String getCvv() { return cvv; }
-        public String getBandeira() { return bandeira; }
-        public boolean isPrincipal() { return principal; }
-        public void setPrincipal(boolean principal) { this.principal = principal; }
-    }
 }

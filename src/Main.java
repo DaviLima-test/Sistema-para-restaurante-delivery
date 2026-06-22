@@ -1,6 +1,6 @@
 //import view.TelaPrincipal;
+import bd.BancoDados;
 import com.formdev.flatlaf.FlatLightLaf;
-import view.TelaCadastro;
 import model.Login;
 import view.TelaLogin;
 import view.TelaPrincipal;
@@ -14,12 +14,12 @@ public class Main {
         EventQueue.invokeLater(() -> {
             try {
         Telabase sistema = new Telabase();
-        Login.inicializarBanco();
+        BancoDados.inicializarBanco();
                 FlatLightLaf.setup();
         // 2. Verifica o "cookie" no banco de dados SQLite
 
 
-        boolean usuarioJaLogou = Login.verificarSeEstaLogado();
+        boolean usuarioJaLogou = BancoDados.verificarSeEstaLogado();
         if (usuarioJaLogou) {
 
             //Login.apagarCookie();

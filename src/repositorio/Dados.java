@@ -12,4 +12,5 @@ public class Dados {
     private static final String USUARIO = "root";
     private static final String SENHA = "1234";
 
+    public static ArrayList<Produto> listaCarrinho;
 }	

@@ -1,6 +1,5 @@
 package view;
 
-import model.Login;
 import model.Pedido;
 import repositorio.Dados;
 
@@ -324,31 +323,41 @@ public class TelaPedidosEntregador extends TelaMenu {
         s.setBackground(COR_CINZA_BG);
         s.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(COR_BORDA, 1, true),
-                BorderFactory.createEmptyBorder(12, 16, 12, 16)
+                BorderFactory.createEmptyBorder(14, 16, 14, 16) // Aumentado espaçamento interno vertical
         ));
         s.setAlignmentX(Component.LEFT_ALIGNMENT);
-        s.setMaximumSize(new Dimension(Integer.MAX_VALUE, 200));
 
-        JLabel lblTit = new JLabel(titulo);
+        // Define dimensões fixas saudáveis para impedir o efeito sanfona do BoxLayout anterior
+        int alturaCalculada = 45 + (pares.length * 24);
+        s.setPreferredSize(new Dimension(320, alturaCalculada));
+        s.setMinimumSize(new Dimension(250, alturaCalculada));
+
+        Texto lblTit = new Texto(titulo);
         lblTit.setFont(new Font("Arial", Font.BOLD, 13));
         lblTit.setForeground(COR_PRIMARIA);
+        lblTit.setAlignmentX(Component.LEFT_ALIGNMENT);
         s.add(lblTit);
         s.add(Box.createVerticalStrut(8));
 
         for (String[] par : pares) {
             JPanel linha = new JPanel(new BorderLayout(8, 0));
             linha.setOpaque(false);
+            linha.setAlignmentX(Component.LEFT_ALIGNMENT);
+
             JLabel chave = new JLabel(par[0] + ":");
             chave.setFont(new Font("Arial", Font.BOLD, 13));
             chave.setForeground(new Color(80, 80, 80));
             chave.setPreferredSize(new Dimension(90, 20));
+
             JLabel valor = new JLabel(par[1]);
             valor.setFont(new Font("Arial", Font.PLAIN, 13));
             valor.setForeground(new Color(40, 40, 40));
+
             linha.add(chave, BorderLayout.WEST);
             linha.add(valor, BorderLayout.CENTER);
+
             s.add(linha);
-            s.add(Box.createVerticalStrut(4));
+            s.add(Box.createVerticalStrut(6)); // Espaçamento fixo seguro entre dados
         }
         return s;
     }

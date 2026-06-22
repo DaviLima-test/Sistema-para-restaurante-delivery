@@ -1,13 +1,12 @@
 package view;
 
 import javax.swing.*;
+
+import bd.BancoDados;
 import model.Login;
 
 import java.awt.*;
-import java.awt.event.ActionListener;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
-import view.Telabase;
+
 public class TelaLogin extends JPanel{
     JPanel panelesq;
     JPanel paneldir;
@@ -99,7 +98,7 @@ public class TelaLogin extends JPanel{
                 System.out.println("Requisicao enviada para o BD\n" +
                         "\nEmail:"+str_email+
                         "\nSenha:"+str_senha.length());
-                if(Login.realizarLogin(str_email,str_senha)) {
+                if(BancoDados.realizarLogin(str_email,str_senha)) {
 
                     Telabase sist = (Telabase) SwingUtilities.getWindowAncestor(this);
                     if (sist != null) {
