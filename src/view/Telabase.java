@@ -17,6 +17,7 @@ public class Telabase extends JFrame {
         setTitle("AiFome");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
+        setLayout(new BorderLayout());
         Width = Toolkit.getDefaultToolkit().getScreenSize().width;
         Height = Toolkit.getDefaultToolkit().getScreenSize().height;
         setSize(Width,Height);
@@ -41,7 +42,7 @@ public class Telabase extends JFrame {
     public void configuraTela(JPanel panel){
 
         getContentPane().removeAll();
-        getContentPane().add(panel);
+        getContentPane().add(panel, BorderLayout.CENTER);
         revalidate();
         repaint();
 

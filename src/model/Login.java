@@ -30,9 +30,9 @@ public class Login {
         this.tipo = tipo;
 }
 public static String GetUser() {
-    if(User.isEmpty()) {
-        if (Email.isEmpty() || Senha.isEmpty()) {
-            System.out.println("Nao ha como requerir pois alguma das variáveis está sem o ngc");
+    if(User == null || User.isEmpty()) {
+        if (Email == null || Email.isEmpty() ||Senha == null || Senha.isEmpty()) {
+            System.err.println("Nao ha como requerir pois alguma das variáveis está sem o ngc");
             return null;
         } else {
             String sqlBuscar = "SELECT nome FROM usuarios WHERE email = ? AND senha = ?;";
@@ -121,23 +121,36 @@ public static String GetUser() {
                 "    ON DELETE CASCADE" +
                 "    ON UPDATE CASCADE"+
                 ");";
+        String urlServidor = "jdbc:mysql://localhost:3306/";
+        try (Connection connServidor = DriverManager.getConnection(urlServidor, USUARIO, SENHA);
+             Statement stmt = connServidor.createStatement()) {
+
+            stmt.executeUpdate(sqlCriarBanco);
+            System.out.println("Banco de dados 'sistema_delivery' verificado/criado com sucesso!");
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao criar o banco de dados: " + e.getMessage());
+            return; // Se não criar o banco, não adianta continuar
+        }
+
+        // 2º PASSO: Agora que o banco existe, conecta nele normalmente para criar as tabelas
         try (Connection conn = obterConexao();
              Statement stmt = conn.createStatement()) {
-            //stmt.executeUpdate("DROP DATABASE IF EXISTS sistema_delivery");
-            stmt.executeUpdate(sqlCriarBanco);
-            stmt.executeUpdate("USE sistema_delivery");
+
+            // Como a URL já aponta para sistema_delivery, não precisa do "USE sistema_delivery"
             stmt.execute(sqlTabelaUsuarios);
             stmt.execute(sqlTabelaCookie);
             stmt.execute(sqlTabelaRestaurante);
             stmt.execute(sqlTabelaCardapio);
+
             // Insere a linha padrão do cookie se for a primeira vez rodando
-            String sqlInsertInicial = "INSERT IGNORE INTO cookie (id, logado, nome_usuario, email_usuario, tipo_usuario) VALUES (1, 0, NULL, NULL,NULL);";
+            String sqlInsertInicial = "INSERT IGNORE INTO cookie (id, logado, nome_usuario, email_usuario, tipo_usuario) VALUES (1, 0, NULL, NULL, NULL);";
             stmt.execute(sqlInsertInicial);
 
-            System.out.println("Banco de dados e tabelas ('usuarios' , 'cookie' , 'restaurante' e 'cardapio') verificados com sucesso!");
+            System.out.println("Tabelas verificadas/criadas com sucesso!");
 
         } catch (SQLException e) {
-            System.err.println("Erro no processo MySQL ao inicializar: " + e.getMessage());
+            System.err.println("Erro ao inicializar as tabelas: " + e.getMessage());
         }
     }
 
@@ -188,15 +201,14 @@ public static String GetUser() {
             System.out.println("Usuário ou senha incorretos.");
             return false; // Retorna falso se as credenciais estiverem erradas
         }
-        String sql = "INSERT INTO restaurante (nome , estrelas, avaliacao, id_gerente) VALUES (?, ?, ?, ?);";
+        String sql = "INSERT INTO restaurante (nome, localizacao, estrelas, id_gerente) VALUES (?, ?, ?, ?);";
 
         try (Connection conn = obterConexao();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
             pstmt.setString(1, nome);
             pstmt.setString(2, localizacao);
-            pstmt.setString(3, avaliacao);
-            pstmt.setString(4,id);
+            pstmt.setString(3, avaliacao);   // vai para "estrelas"
+            pstmt.setString(4, id);
             pstmt.executeUpdate();
             System.out.println("Restaurante cadastrado com sucesso !");
             return true;

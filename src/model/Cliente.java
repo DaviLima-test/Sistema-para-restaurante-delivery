@@ -1,14 +1,19 @@
 package model;
 
-public class Cliente extends Login {
+public class Cliente  {
     private String Cartao;
     private int Estrelas;
+    private String email;
+    private String nome;
 
-    public Cliente(String email, String senha, String user, String cartao) {
-        super(email, senha, user );
+    public Cliente(String email, String user, String cartao) {
+        this.nome = nome;
+        this.email = email;
         this.Cartao = cartao;
         this.Estrelas = 5; // Padrão inicial
     }
+
+    public String getNome() { return this.nome; }
 
     public void Pedir() {
         // Lógica simplificada

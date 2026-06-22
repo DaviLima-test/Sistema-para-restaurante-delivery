@@ -10,4 +10,8 @@ public class Produto {
         this.descricao = descricao;
         this.codigo = codigo;
     }
+
+    public Produto() {
+
+    }
 }

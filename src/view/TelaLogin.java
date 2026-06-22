@@ -38,8 +38,8 @@ public class TelaLogin extends JPanel{
 
         panelesq.add(imagem);
 
-        email  = new CampoTextoArredondado(20,20,Color.BLACK,50);
-        senha = new CampoSenhaArredondado(20,20,Color.BLACK,50);
+        email  = new CampoTextoArredondado(20,20,Color.BLACK,30);
+        senha = new CampoSenhaArredondado(20,20,Color.BLACK,30);
 
 
         GridBagConstraints gbc = new GridBagConstraints();
@@ -101,10 +101,12 @@ public class TelaLogin extends JPanel{
                         "\nSenha:"+str_senha.length());
                 if(Login.realizarLogin(str_email,str_senha)) {
 
-                    TelaPrincipal tl = new TelaPrincipal();
                     Telabase sist = (Telabase) SwingUtilities.getWindowAncestor(this);
-                    if (sist != null)
+                    if (sist != null) {
+                        TelaPrincipal tl = new TelaPrincipal(sist);
                         sist.configuraTela(tl);
+
+                    }
                 }
             }
         });

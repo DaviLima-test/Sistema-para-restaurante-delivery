@@ -26,7 +26,7 @@ public class Main {
 
 
             System.out.println("Cookie ativo! Abrindo o feed principal...");
-            TelaPrincipal principal = new TelaPrincipal();
+            TelaPrincipal principal = new TelaPrincipal(sistema);
             sistema.configuraTela(principal);
             sistema.setVisible(true);
         } else {

@@ -6,30 +6,66 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 
-public class TelaPerfil extends JPanel {
+public class TelaPerfil extends TelaMenu {
 
-    public TelaPerfil(){
+    public TelaPerfil(Telabase sist){
+        super(sist); // 1. Inicializa a casca (Header + Menu + Overlay) da classe abstrata
 
-        this.setBackground(Color.WHITE);
-        setLayout(new BorderLayout());
+
+        JPanel container = new JPanel();
+        container.setBackground(Color.WHITE);
+        container.setLayout(new BorderLayout());
+
+
         JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel,BoxLayout.Y_AXIS));
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setOpaque(false);
-        String user=Login.GetUser();
-        String tipo=Login.GetTipo();
-        add(criaHeader(),BorderLayout.NORTH);
-        Texto txt = new Texto("Usuario:"+user);
-        txt.setFont(new Font("Arial", Font.BOLD, 30));
-        txt.setAlignmentX(Component.CENTER_ALIGNMENT);
-        panel.add(txt);
+        container.add(panel, BorderLayout.CENTER);
 
-        txt = new Texto("Tipo de conta:"+tipo);
-        txt.setFont(new Font("Arial", Font.BOLD, 30));
-        txt.setAlignmentX(Component.CENTER_ALIGNMENT);
-        panel.add(txt);
-        add(panel,BorderLayout.CENTER);
-        BotaoArredondado bnt_logout = getBotaoArredondado();
+
+        panel.add(Box.createVerticalStrut(30));
+
+
+        PainelFormulario panel2 = new PainelFormulario(500, 400, Color.red);
+        panel2.setPreferredSize(new Dimension(500, 400));
+        panel2.setMaximumSize(new Dimension(500, 400));
+
+
+        panel2.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panel.add(panel2);
+
+
+        String user = Login.GetUser();
+        String tipo = Login.GetTipo();
+
+
+        Texto txtNome = new Texto(user);
+        txtNome.setFont(new Font("Arial", Font.BOLD, 30));
+        txtNome.setForeground(Color.WHITE); // Se o fundo é vermelho, texto branco destaca mais
+
+// CORREÇÃO 2: Como panel2 é FlowLayout, adicionamos o texto normalmente sem o 'gbc'
+        panel2.add(txtNome);
+
+// Espaçamento entre o painel vermelho e as informações abaixo dele
+        panel.add(Box.createRigidArea(new Dimension(0, 20)));
+
+// Texto do Tipo de Conta
+        Texto txtTipo = new Texto("Tipo de conta: " + tipo);
+        txtTipo.setFont(new Font("Arial", Font.BOLD, 20));
+        txtTipo.setAlignmentX(Component.CENTER_ALIGNMENT); // Alinhamento correto
+        panel.add(txtTipo);
+
+// Espaçamento entre o texto e o botão de logout
+        panel.add(Box.createRigidArea(new Dimension(0, 20)));
+
+// Botão de Logout
+        BotaoArredondado bnt_logout = getBotaoArredondado(); // Assume que você tem esse método criado
+        bnt_logout.setAlignmentX(Component.CENTER_ALIGNMENT); // Alinhamento correto
         panel.add(bnt_logout);
+
+// Mágica final: Envia toda essa interface para o centro da TelaMenu
+        setConteudoInterno(container);
+//        add(container);
     }
 
 
@@ -54,80 +90,4 @@ public class TelaPerfil extends JPanel {
         });
         return bnt_logout;
     }
-
-    public JPanel criaHeader(){
-    JPanel p = new JPanel(new GridBagLayout());
-        p.setBackground(Color.WHITE);
-        p.setPreferredSize(new Dimension(800, 80));
-
-        p.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(240, 240, 240)));
-
-    GridBagConstraints gbc = new GridBagConstraints();
-    gbc.insets = new Insets(0, 20, 0, 20);
-    gbc.gridx = 0;
-    gbc.weightx = 0.0;
-        JButton btnLogo = new JButton("AIFood");
-        btnLogo.setFont(new Font("Arial", Font.BOLD, 30));
-        btnLogo.setForeground(new Color(234, 16, 34)); // Vermelho iFood
-
-        // Deixa o botão com aparência de texto (sem bordas ou fundo de botão)
-        btnLogo.setBorderPainted(false);
-        btnLogo.setContentAreaFilled(false);
-        btnLogo.setFocusPainted(false);
-        btnLogo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
-        // Ação do Botão
-        btnLogo.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                System.out.println("Botão AIFood clicado! Tentando mudar de tela...");
-
-                // Pega a janela base a partir do próprio botão clicado
-                Window ancestral = SwingUtilities.getWindowAncestor(btnLogo);
-
-                if (ancestral instanceof Telabase) {
-                    Telabase sist = (Telabase) ancestral;
-
-                    // Instancia a nova tela
-                    TelaPrincipal tl = new TelaPrincipal();
-
-                    // Chama a função da Telabase
-                    sist.configuraTela(tl);
-                } else {
-                    System.out.println("Erro: Ancestor não é uma Telabase ou é nulo!");
-                }
-            }
-        });
-
-        gbc.gridx = 1;
-        p.add(btnLogo, gbc);
-
-
-
-
-    CampoTextoArredondado busca = new CampoTextoArredondado(18, 15, new Color(240, 240, 240),30);
-        busca.setText(" Buscar Restaurantes e pratos ...");
-        busca.setForeground(Color.GRAY);
-    gbc.gridx = 2;
-    gbc.weightx = 1.0;
-    gbc.fill = GridBagConstraints.HORIZONTAL;
-        busca.addFocusListener(new FocusListener() {
-        @Override
-        public void focusGained(FocusEvent e) {
-            if(busca.getText().equals(" Buscar Restaurantes e pratos ...")){
-                busca.setText("");
-            }
-        }
-
-        @Override
-        public void focusLost(FocusEvent e) {
-            if(busca.getText().isEmpty()){
-                busca.setText(" Buscar Restaurantes e pratos ...");
-            }
-        }
-    });
-        p.add(busca, gbc);
-
-        return p;
-}
 }
