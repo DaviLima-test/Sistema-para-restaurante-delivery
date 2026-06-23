@@ -10,6 +10,7 @@ public class Login{
     private  String Senha;
     private  String User;
     private  String tipo;
+    private  String localizacao;
     ArrayList<Produto>listaCarrinho;
 
     /*
@@ -35,6 +36,12 @@ public  String GetUser() {
     }
 
 }
+
+    public String getLocalizacao() {
+        if(localizacao == null || localizacao.isEmpty())
+            localizacao = BancoDados.getLocalizacao();
+        return localizacao;
+    }
 
     public String GetTipo() {
         return tipo;

@@ -16,6 +16,7 @@ public class TelaCadastro extends JPanel{
     CampoTextoArredondado usuario;
     CampoTextoArredondado email;
     CampoSenhaArredondado senha;
+    CampoTextoArredondado localizacao;
     Texto txt;
     CheckboxCustomizado chk_cliente;
     CheckboxCustomizado chk_entregador;
@@ -42,7 +43,7 @@ public class TelaCadastro extends JPanel{
         usuario = new CampoTextoArredondado(20,20,Color.BLACK,30);
         email  = new CampoTextoArredondado(20,20,Color.BLACK,30);
         senha = new CampoSenhaArredondado(20,20,Color.BLACK,30);
-
+        localizacao = new CampoTextoArredondado(20,20,Color.BLACK,30);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 50, 10, 50);
@@ -54,12 +55,11 @@ public class TelaCadastro extends JPanel{
         gbc.gridy = 1;
 
         txt = new Texto("Cadastro");
-        txt.setFont(new Font("Arial",Font.BOLD,60));
+        txt.setFont(new Font("Arial",Font.BOLD,40));
         paneldir.add(txt,gbc);
         gbc.gridy++;
         paneldir.add(Box.createVerticalStrut(40),gbc);
         //paneldir.add(Box.createVerticalStrut(30));
-        gbc.gridy++;
         txt = new Texto("Usuario:");
         txt.setFont(new Font("Arial", Font.BOLD, 30));
 
@@ -80,6 +80,13 @@ public class TelaCadastro extends JPanel{
         paneldir.add(txt,gbc);
         gbc.gridy++;
         paneldir.add(senha,gbc);
+        gbc.gridy++;
+
+        txt = new Texto("Localização: ");
+        txt.setFont(new Font("Arial",Font.BOLD,30));
+        paneldir.add(txt,gbc);
+        gbc.gridy++;
+        paneldir.add(localizacao,gbc);
         gbc.gridy++;
 
         txt = new Texto("Selecione o seu perfil");
@@ -143,6 +150,7 @@ public class TelaCadastro extends JPanel{
         String str_usuario = usuario.getText();
         String str_email=email.getText();
         String str_senha=new String(senha.getPassword());
+        String str_localizacao =localizacao.getText();
             if(str_usuario.isEmpty()|| str_email.isEmpty() || str_senha.isEmpty()  ){
                 JOptionPane.showMessageDialog(this,"Por favor, preencha todos os campos");
             }else{
@@ -160,9 +168,10 @@ public class TelaCadastro extends JPanel{
                             "Usuario:"+str_usuario+
                             "\nEmail:"+str_email+
                             "\nSenha:"+str_senha.length()+
-                            "\nTipo:"+str_tipo);
+                            "\nTipo:" +str_tipo+
+                            "\nLocalizacao"+str_localizacao);
 
-                    BancoDados.cadastrarUsuario(str_usuario,str_email,str_senha,str_tipo);
+                    BancoDados.cadastrarUsuario(str_usuario,str_email,str_senha,str_tipo,str_localizacao);
 
 
                     Telabase sist = (Telabase) SwingUtilities.getWindowAncestor(this);

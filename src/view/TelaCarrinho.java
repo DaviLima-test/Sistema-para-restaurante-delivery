@@ -27,7 +27,6 @@ public class TelaCarrinho extends TelaMenu {
         this.sist = sist;
 
         // Inicializa a lista do carrinho caso esteja nula no repositório
-
         if (Dados.listaCarrinho == null) {
             Dados.listaCarrinho = new ArrayList<>();
             // Itens de demonstração inicial caso o carrinho abra vazio pela primeira vez
@@ -152,7 +151,7 @@ public class TelaCarrinho extends TelaMenu {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         card.add(lblNome, gbc);
 
-        // Preço Mockado (Simulando o preco DECIMAL da sua tabela)
+        // Preço Mockado
         JLabel lblPreco = new JLabel("R$ 28,90");
         lblPreco.setFont(new Font("Arial", Font.BOLD, 13));
         lblPreco.setForeground(new Color(50, 50, 50));
@@ -203,13 +202,23 @@ public class TelaCarrinho extends TelaMenu {
         }));
         painel.add(Box.createVerticalStrut(14));
 
-        // Seção 2: Método de pagamento integrado com a lógica de Cartão Principal
+        // ALTERADO: Método de pagamento integrado com tratamento de erro (Fallback para sem cartão)
         Cartao cartao = Cartao.GetPrincipal();
-        String cartaoTexto = "•••• "+cartao.getQuatroUltimosDigitos(); // Fallback padrão/Mock seguro
-        painel.add(criarSecaoCarrinho("💳 Forma de Pagamento(usa cartão principal)", new String[][]{
-                {"Cartão Ativo", cartaoTexto},
-                {"Tipo", cartao.getBandeira()}
-        }));
+        boolean possuiCartao = (cartao != null);
+
+        if (possuiCartao) {
+            String cartaoTexto = "•••• " + cartao.getQuatroUltimosDigitos();
+            painel.add(criarSecaoCarrinho("💳 Forma de Pagamento", new String[][]{
+                    {"Cartão Ativo", cartaoTexto},
+                    {"Tipo", cartao.getBandeira()}
+            }));
+        } else {
+            // Exibe mensagem de erro avisando que não há cartões
+            painel.add(criarSecaoCarrinho("⚠️ Forma de Pagamento", new String[][]{
+                    {"Status", "Nenhum cartão cadastrado!"},
+                    {"Ação", "Cadastre um cartão no seu perfil"}
+            }));
+        }
         painel.add(Box.createVerticalStrut(14));
 
         // Seção 3: Cálculos de Valores baseados nos itens do carrinho
@@ -226,14 +235,20 @@ public class TelaCarrinho extends TelaMenu {
         painel.add(Box.createVerticalGlue());
         painel.add(Box.createVerticalStrut(20));
 
-        // Botão de Ação: Só ativa se houver itens para comprar
+        // Botão de Ação com validações acopladas
         BotaoArredondado btnFinalizar = new BotaoArredondado("🚀 Confirmar e Fazer Pedido", 22, COR_VERDE, 15);
         btnFinalizar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
         btnFinalizar.setAlignmentX(Component.LEFT_ALIGNMENT);
 
+        // ALTERADO: Validação do botão para impedir o envio caso não haja cartão ou se o carrinho estiver vazio
         if (Dados.listaCarrinho.isEmpty()) {
             btnFinalizar.setEnabled(false);
             btnFinalizar.setBackground(Color.LIGHT_GRAY);
+            btnFinalizar.setText("🛒 Carrinho Vazio");
+        } else if (!possuiCartao) {
+            btnFinalizar.setEnabled(false);
+            btnFinalizar.setBackground(Color.LIGHT_GRAY);
+            btnFinalizar.setText("⚠️ Cadastre um Cartão para Comprar");
         } else {
             btnFinalizar.addActionListener(e -> finalizarPedidoDoCarrinho(subtotal));
         }
@@ -278,6 +293,11 @@ public class TelaCarrinho extends TelaMenu {
                 valor.setFont(new Font("Arial", Font.BOLD, 14));
                 valor.setForeground(COR_VERDE);
             }
+            // ALTERADO: Destaca visualmente em vermelho se não houver cartão cadastrado
+            else if(par[1].equals("Nenhum cartão cadastrado!")) {
+                valor.setFont(new Font("Arial", Font.BOLD, 12));
+                valor.setForeground(COR_PRIMARIA);
+            }
 
             linha.add(chave, BorderLayout.WEST);
             linha.add(valor, BorderLayout.CENTER);
@@ -292,31 +312,25 @@ public class TelaCarrinho extends TelaMenu {
     private void finalizarPedidoDoCarrinho(double valorTotal) {
         if (Dados.listaCarrinho.isEmpty()) return;
 
-        // Pega o primeiro item como prato principal para gerar o pedido Demo no seu modelo
         Produto principal = Dados.listaCarrinho.get(0);
 
-        // Criando as dependências necessárias baseado no construtor da classe Pedido
         model.Restaurante rest = new model.Restaurante();
         model.Cliente clienteLogado = new model.Cliente(Telabase.getLogin().GetEmail(), Telabase.getLogin().GetUser(), "");
 
-        // Gera um novo pedido com estado = 1 (Pendente) para a cozinha receber
         Pedido novoPedido = new Pedido(principal, "Imediato", null, null, rest, clienteLogado);
         novoPedido.setEstado(1);
 
-        // Adiciona na lista geral compartilhada de pedidos ativos do ecossistema
         if (Dados.listaPedidos == null) {
             Dados.listaPedidos = new ArrayList<>();
         }
         Dados.listaPedidos.add(novoPedido);
 
-        // Limpa o carrinho de compras após o sucesso
         Dados.listaCarrinho.clear();
 
         JOptionPane.showMessageDialog(this,
                 "🎉 Pedido enviado com sucesso!\nO restaurante já começou a preparar sua refeição.",
                 "Sucesso!", JOptionPane.INFORMATION_MESSAGE);
 
-        // Redireciona o usuário direto para a tela de acompanhamento de pedidos dele
         if (sist != null) {
             sist.configuraTela(new TelaPedidosCliente(sist));
         }
@@ -329,7 +343,6 @@ public class TelaCarrinho extends TelaMenu {
     }
 
     private void criarItensCarrinhoDemo() {
-        // Alimenta o carrinho temporário caso o desenvolvedor entre direto na tela para testar
         Produto p1 = new Produto(); p1.nome = "X-Burguer Duplo Cheddar";
         Produto p2 = new Produto(); p2.nome = "Batata Frita Grande Média";
         Dados.listaCarrinho.add(p1);

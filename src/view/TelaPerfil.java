@@ -153,6 +153,7 @@ public class TelaPerfil extends TelaMenu {
         painel.add(criarSecao("📝 Dados Cadastrais", new String[][]{
                 {"Usuário",     Telabase.getLogin().GetUser()},
                 {"E-mail",       Telabase.getLogin().GetEmail()},
+                {"Localização",  Telabase.getLogin().getLocalizacao()},
                 {"Tipo Acesso",  Telabase.getLogin().GetTipo()}
         }));
 
