@@ -1,7 +1,6 @@
 package bd;
 
-import model.Cartao;
-import model.Login;
+import model.*;
 import view.Telabase;
 
 import java.sql.*;
@@ -247,7 +246,7 @@ public class BancoDados {
 
             Telabase.setLogin(new Login(email, nome, tipo));
 
-            // ALTERADO: Ao cadastrar, já podemos salvar o Cookie com a localização inserida
+
             salvarCookieLogin(nome, email, tipo, localizacao);
 
             System.out.println("Usuário cadastrado com sucesso!");
@@ -260,6 +259,7 @@ public class BancoDados {
     }
 
     // ALTERADO: Agora busca também a 'localizacao' e passa para o método do cookie
+
     public static boolean realizarLogin(String email, String senha) {
         String sqlBuscar = "SELECT nome, tipo, localizacao FROM usuarios WHERE email = ? AND senha = ?;";
 
@@ -276,7 +276,6 @@ public class BancoDados {
                     String localizacaoUsuario = rs.getString("localizacao"); // Captura a localização
 
                     Telabase.setLogin(new Login(email, nomeUsuario, tipoUsuario));
-
                     // Passa a localização capturada para salvar no cookie
                     salvarCookieLogin(nomeUsuario, email, tipoUsuario, localizacaoUsuario);
 
@@ -291,8 +290,8 @@ public class BancoDados {
         System.out.println("Usuário ou senha incorretos.");
         return false;
     }
-
     // ALTERADO: Adicionado parâmetro 'localizacao' e alterada a Query SQL para atualizar o cookie correspondente
+
     private static void salvarCookieLogin(String nome, String email, String tipo, String localizacao) {
         String sql = "UPDATE cookie SET logado = 1, nome_usuario = ?, email_usuario = ?, tipo_usuario = ?, localizacao_usuario = ? WHERE id = 1;";
 
@@ -309,8 +308,8 @@ public class BancoDados {
             System.err.println("Erro ao atualizar cookie: " + e.getMessage());
         }
     }
-
     // ALTERADO: Adicionado 'localizacao_usuario' no SELECT do cookie
+
     public static boolean verificarSeEstaLogado() {
         String sql = "SELECT logado, nome_usuario, email_usuario, tipo_usuario, localizacao_usuario FROM cookie WHERE id = 1;";
 
@@ -325,7 +324,7 @@ public class BancoDados {
                     String nomeUsuario = rs.getString("nome_usuario");
                     String emailUsuario = rs.getString("email_usuario");
                     String tipousuario = rs.getString("tipo_usuario");
-                    // A localização está salva no banco caso precise usar em outro lugar
+                    String localizacaousuario = rs.getString("localizacao_usuario");
 
                     Telabase.setLogin(new Login(emailUsuario, nomeUsuario, tipousuario));
                     System.out.println("Logado aqui");
@@ -356,7 +355,6 @@ public class BancoDados {
     }
 
     // --- OS DEMAIS MÉTODOS CONTINUAM IGUAIS ---
-
     public static boolean cadastrarRestaurante(String nome, String localizacao, String email, String senha, String avaliacao) {
         String sql_find = "SELECT id FROM usuarios where email = ? AND senha = ?";
         boolean passou = false;
@@ -398,16 +396,43 @@ public class BancoDados {
             return false;
         }
     }
+    public static boolean atualizarCardapio(int codigo, String novoNome, String novoPreco) {
+        // Atualiza direto pelo ID do prato (codigo)
+        String sql = "UPDATE cardapio SET nome_prato = ?, preco = ? WHERE id = ?;";
 
-    public static boolean cadastrarCardapio(String nome_prato, String preco, String nome, String avaliacao) {
-        String sql_find = "SELECT id FROM restaurante where nome = ? AND estrelas = ?";
+        try (Connection conn = obterConexao();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, novoNome);
+            pstmt.setString(2, novoPreco);
+            pstmt.setInt(3, codigo); // Passa o código direto aqui
+
+            int linhasAfetadas = pstmt.executeUpdate();
+
+            if (linhasAfetadas > 0) {
+                System.out.println("Prato com código " + codigo + " atualizado com sucesso!");
+                return true;
+            } else {
+                System.out.println("Nenhum prato foi encontrado com o código " + codigo);
+                return false;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao atualizar o cardápio pelo código: " + e.getMessage());
+            return false;
+        }
+    }
+    public static boolean cadastrarCardapio(String nome_prato, String preco, String nomeRestaurante, String localizacao) {
+        // Agora busca por nome e localização, em vez de estrelas
+        String sql_find = "SELECT id FROM restaurante WHERE nome = ? AND localizacao = ?";
         boolean passou = false;
-        String id = new String();
+        String id = "";
+
         try (Connection conn = obterConexao();
              PreparedStatement pstmt = conn.prepareStatement(sql_find)) {
 
-            pstmt.setString(1, nome);
-            pstmt.setString(2, avaliacao);
+            pstmt.setString(1, nomeRestaurante);
+            pstmt.setString(2, localizacao);
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
@@ -419,11 +444,13 @@ public class BancoDados {
             System.err.println("Erro ao buscar restaurante Mysql: " + e.getMessage());
             return false;
         }
-        if(!passou) {
-            System.out.println("Restaurante nao encontrado.");
+
+        if (!passou) {
+            System.out.println("Restaurante nao encontrado com essa localização.");
             return false;
         }
-        String sql = "INSERT INTO cardapio (nome_prato, preco, id_restaurante) VALUES (?, ?, ?);"; // Corrigido de 'nome' para 'nome_prato' conforme sua tabela
+
+        String sql = "INSERT INTO cardapio (nome_prato, preco, id_restaurante) VALUES (?, ?, ?);";
 
         try (Connection conn = obterConexao();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -440,8 +467,116 @@ public class BancoDados {
             return false;
         }
     }
+    public static ArrayList<Produto> getCardapioPorRestaurante(int idRestaurante) {
+        ArrayList<Produto> produtos = new ArrayList<>();
+        // Filtra direto no banco apenas os pratos daquele restaurante
+        String sql = "SELECT id, nome_prato, preco FROM cardapio WHERE id_restaurante = ?;";
 
-    public static boolean salvarCartao(Cartao cartao) {
+        try (Connection conn = obterConexao();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, idRestaurante); // Define qual restaurante buscar
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    int codigo = rs.getInt("id");
+                    String nomePrato = rs.getString("nome_prato");
+                    double preco = rs.getDouble("preco");
+
+                    Produto produto = new Produto(codigo, nomePrato, preco);
+                    produtos.add(produto);
+                }
+            }
+            return produtos;
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao buscar cardápio do restaurante " + idRestaurante + ": " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+    public static boolean removerPrato(int codigo) {
+        // Deleta o prato diretamente usando a chave primária (id)
+        String sql = "DELETE FROM cardapio WHERE id = ?;";
+
+        try (Connection conn = obterConexao();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, codigo);
+
+            int linhasAfetadas = pstmt.executeUpdate();
+
+            if (linhasAfetadas > 0) {
+                System.out.println("Prato com código " + codigo + " removido com sucesso!");
+                return true;
+            } else {
+                System.out.println("Nenhum prato foi encontrado com o código " + codigo);
+                return false;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao remover o prato do cardápio: " + e.getMessage());
+            return false;
+        }
+    }
+    public static String[] buscarRestaurantePorGerente(String emailGerente) {
+
+        if (emailGerente == null || emailGerente.isEmpty()) {
+            System.err.println("[BD] buscarRestaurantePorGerente: email nulo ou vazio.");
+            return null;
+        }
+
+        String sql =
+                "SELECT r.id, r.nome, r.localizacao, r.estrelas " +
+                        "FROM restaurante r " +
+                        "INNER JOIN usuarios u ON r.id_gerente = u.id " +
+                        "WHERE u.email = ? " +
+                        "LIMIT 1";                       // um gerente → um restaurante
+
+        try (Connection conn    = obterConexao();
+             PreparedStatement p = conn.prepareStatement(sql)) {
+
+            p.setString(1, emailGerente);
+
+            try (ResultSet rs = p.executeQuery()) {
+                if (rs.next()) {
+                    return new String[]{
+                            rs.getString("id"),
+                            rs.getString("nome"),
+                            rs.getString("localizacao"),
+                            rs.getString("estrelas")
+                    };
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("[BD] Erro ao buscar restaurante do gerente: " + e.getMessage());
+        }
+
+        return null;   // gerente não tem restaurante ainda
+    }
+    public static ArrayList<Restaurante> getRestaurantes() {
+        String sql = "SELECT r.nome, r.localizacao, r.estrelas " +
+                "FROM restaurante r ";
+        ArrayList<Restaurante> restaurantes = new ArrayList<>();
+        try (Connection conn = obterConexao();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    String nome = rs.getString("nome");
+                    String localizacao = rs.getString("localizacao");
+                    int estrelas = rs.getInt("estrelas");
+
+                    Restaurante restaurante = new Restaurante(nome,localizacao,estrelas);
+                    restaurantes.add(restaurante);
+                }
+            }
+            return restaurantes;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+        public static boolean salvarCartao(Cartao cartao) {
         String idCliente = GetIdUsuario(Telabase.getLogin().GetUser(), Telabase.getLogin().GetEmail(), Telabase.getLogin().GetTipo());
         String sql = "INSERT INTO cartoes (id_cliente, numero, titular, validade, cvv, bandeira, principal) VALUES (?, ?, ?, ?, ?, ?, ?)";
 

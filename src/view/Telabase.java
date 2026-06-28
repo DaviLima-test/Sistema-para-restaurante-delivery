@@ -304,7 +304,7 @@ class CheckboxCustomizado extends JCheckBox {
 }
 class CardRestaurante extends JPanel {
 
-    public CardRestaurante(String nome, String nota, String tempo, String frete) {
+    public CardRestaurante(String nome, String nota, String tempo) {
         setLayout(new BorderLayout(15, 0));
         setBackground(Color.WHITE);
         setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -341,7 +341,7 @@ class CardRestaurante extends JPanel {
         lblNome.setFont(new Font("Arial", Font.BOLD, 16));
 
         // Detalhes em cinza (Nota, Tempo, Frete) igual ao app
-        JLabel lblDetalhes = new JLabel("⭐ " + nota + " • " + tempo + " • " + frete);
+        JLabel lblDetalhes = new JLabel("⭐ " + nota + " • " );
         lblDetalhes.setFont(new Font("Arial", Font.PLAIN, 13));
         lblDetalhes.setForeground(Color.GRAY);
 
@@ -353,6 +353,8 @@ class CardRestaurante extends JPanel {
         // Transforma o card todo em um botão clicável visualmente
         setCursor(new Cursor(Cursor.HAND_CURSOR));
     }
+
+
 }
 class Overlay extends JPanel {
 

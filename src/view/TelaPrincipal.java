@@ -2,7 +2,10 @@ package view;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.util.ArrayList;
 import javax.swing.*;
+
+import bd.BancoDados;
 import model.*;
 
 public class TelaPrincipal extends TelaMenu {
@@ -127,27 +130,12 @@ public class TelaPrincipal extends TelaMenu {
         JPanel listaHorizontal = new JPanel();
         listaHorizontal.setLayout(new BoxLayout(listaHorizontal, BoxLayout.X_AXIS));
         listaHorizontal.setBackground(Color.WHITE);
+        ArrayList<Restaurante> restaurantes = BancoDados.getRestaurantes();
+        for(Restaurante re : restaurantes){
+            listaHorizontal.add(new CardRestaurante(re.getNome(),re.getLocalizacao(),String.valueOf(re.getEstrelas())));
+            listaHorizontal.add(Box.createHorizontalStrut(15));
+        }
 
-        listaHorizontal.add(new CardRestaurante("Burguer King", "4.7", "15-25 min", "R$ 4,99"));
-        listaHorizontal.add(Box.createHorizontalStrut(15));
-        listaHorizontal.add(new CardRestaurante("Pizza Hut", "4.5", "30-40 min", "Grátis"));
-        listaHorizontal.add(Box.createHorizontalStrut(15));
-        listaHorizontal.add(new CardRestaurante("Subway - Centro", "4.3", "20-30 min", "R$ 2,00"));
-        listaHorizontal.add(Box.createHorizontalStrut(15));
-        listaHorizontal.add(new CardRestaurante("Jonas", "4.3", "20-30 min", "R$ 2,00"));
-        listaHorizontal.add(Box.createHorizontalStrut(15));
-        listaHorizontal.add(new CardRestaurante("Pizza Hut", "4.5", "30-40 min", "Grátis"));
-        listaHorizontal.add(Box.createHorizontalStrut(15));
-        listaHorizontal.add(new CardRestaurante("ASASASAS - Centro", "4.3", "20-30 min", "R$ 2,00"));
-        listaHorizontal.add(Box.createHorizontalStrut(15));
-        listaHorizontal.add(new CardRestaurante("PASASASt", "4.5", "30-40 min", "Grátis"));
-        listaHorizontal.add(Box.createHorizontalStrut(15));
-        listaHorizontal.add(new CardRestaurante("12o", "4.3", "20-30 min", "R$ 2,00"));
-        listaHorizontal.add(Box.createHorizontalStrut(15));
-        listaHorizontal.add(new CardRestaurante("AAAAAAAAAAA", "4.5", "30-40 min", "Grátis"));
-        listaHorizontal.add(Box.createHorizontalStrut(15));
-        listaHorizontal.add(new CardRestaurante("21", "4.3", "20-30 min", "R$ 2,00"));
-        listaHorizontal.add(Box.createHorizontalStrut(15));
 
         listaHorizontal.setOpaque(true);
         listaHorizontal.setBackground(Color.WHITE);
@@ -179,4 +167,6 @@ public class TelaPrincipal extends TelaMenu {
 
         return panel;
     }
+
+
 }

@@ -1,5 +1,6 @@
 package view;
 
+import bd.BancoDados;
 import model.Login;
 import javax.swing.*;
 import java.awt.*;
@@ -179,10 +180,14 @@ public abstract class TelaMenu extends JPanel {
             sist.configuraTela(tc);
         });
 
-        if ("restaurante".equals(Telabase.getLogin().GetTipo())) {
-            adicionarItemMenu("Gerenciar restaurante", e -> {});
+        if ("restaurante".equals(Login.GetTipo())) {
+                if(BancoDados.buscarRestaurantePorGerente(Login.GetEmail())==null)
+                adicionarItemMenu("Cadastrar Restaurante", e -> sist.configuraTela(new TelaNovoRestaurante(sist)));
+                else
+                adicionarItemMenu("Gerenciar Restaurante", e -> sist.configuraTela(new TelaGerenciarRestaurante(sist)));
+                adicionarItemMenu("Pedidos", e -> sist.configuraTela(new TelaPedidosRestaurante(sist)));
         }
-        if ("entregador".equals(Telabase.getLogin().GetTipo())) {
+        if ("entregador".equals(Login.GetTipo())) {
             adicionarItemMenu("Pedidos a serem entregues", e -> {
                 TelaPedidosEntregador tp = new TelaPedidosEntregador(sist);
                 sist.configuraTela(tp);

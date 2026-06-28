@@ -145,7 +145,7 @@ public class TelaCarrinho extends TelaMenu {
         gbc.gridheight = 1;
 
         // Nome do Produto
-        JLabel lblNome = new JLabel(prod.nome != null ? prod.nome : "Item Individual");
+        JLabel lblNome = new JLabel(prod.getNome() != null ? prod.getNome() : "Item Individual");
         lblNome.setFont(new Font("Arial", Font.BOLD, 14));
         gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -314,7 +314,7 @@ public class TelaCarrinho extends TelaMenu {
 
         Produto principal = Dados.listaCarrinho.get(0);
 
-        model.Restaurante rest = new model.Restaurante();
+        model.Restaurante rest = new model.Restaurante("","",1);
         model.Cliente clienteLogado = new model.Cliente(Telabase.getLogin().GetEmail(), Telabase.getLogin().GetUser(), "");
 
         Pedido novoPedido = new Pedido(principal, "Imediato", null, null, rest, clienteLogado);
@@ -343,8 +343,8 @@ public class TelaCarrinho extends TelaMenu {
     }
 
     private void criarItensCarrinhoDemo() {
-        Produto p1 = new Produto(); p1.nome = "X-Burguer Duplo Cheddar";
-        Produto p2 = new Produto(); p2.nome = "Batata Frita Grande Média";
+        Produto p1 = new Produto(); p1.setNome("X-Burguer Duplo Cheddar");
+        Produto p2 = new Produto(); p2.setNome("Batata Frita Grande Média");
         Dados.listaCarrinho.add(p1);
         Dados.listaCarrinho.add(p2);
     }
