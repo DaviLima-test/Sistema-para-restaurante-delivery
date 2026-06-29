@@ -1,11 +1,13 @@
 package model;
 
 public class Restaurante {
+    private int id;
     private String nome;
     private String Localizacao;
     private int Estrelas;
 
-    public Restaurante(String nome , String localizacao , int estrelas){
+    public Restaurante(int id ,String nome , String localizacao , int estrelas ){
+        this.id = id;
         this.nome = nome;
         this.Estrelas = estrelas;
         this.Localizacao = localizacao;
@@ -29,4 +31,6 @@ public class Restaurante {
     public int getEstrelas() {
         return Estrelas;
     }
+
+    public int getId() {return id;}
 }

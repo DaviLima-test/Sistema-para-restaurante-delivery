@@ -13,7 +13,7 @@ public abstract class TelaMenu extends JPanel {
     private Overlay overlay;
     private JPanel conteudoApp;       // Container de fundo que segura o Header + Conteúdo da filha
     private JPanel conteudoInterno;   // O conteúdo específico que a classe filha vai injetar
-    private Telabase sist;
+    protected Telabase sist;
 
     public TelaMenu(Telabase sist) {
         this.sist = sist;

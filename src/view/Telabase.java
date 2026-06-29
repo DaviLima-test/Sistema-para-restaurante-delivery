@@ -6,6 +6,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.io.File;
+import java.util.Objects;
 
 public class Telabase extends JFrame {
     public static int Width;
@@ -304,14 +305,14 @@ class CheckboxCustomizado extends JCheckBox {
 }
 class CardRestaurante extends JPanel {
 
-    public CardRestaurante(String nome, String nota, String tempo) {
+    public CardRestaurante(String nome, String nota, String avaliacao ,String emj) {
         setLayout(new BorderLayout(15, 0));
         setBackground(Color.WHITE);
         setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // Define uma altura fixa para o card e largura flexível
-        setPreferredSize(new Dimension(320, 80)); // Largura fixa de 320px para caber vários na tela lateralmente
-        setMaximumSize(new Dimension(320, 80));
+        setPreferredSize(new Dimension(400, 80)); // Largura fixa de 320px para caber vários na tela lateralmente
+        setMaximumSize(new Dimension(400, 80));
 
         // Borda suave ao redor do card para parecer um bloco separado
         setBorder(BorderFactory.createCompoundBorder(
@@ -320,7 +321,7 @@ class CardRestaurante extends JPanel {
         ));
 
         // 1. "FOTO" DO RESTAURANTE (Substituída por um quadrado cinza arredondado/ícone)
-        JPanel fotoPlaceholder = new JPanel() {
+        JPanel emoji = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -330,8 +331,12 @@ class CardRestaurante extends JPanel {
                 g2.dispose();
             }
         };
-        fotoPlaceholder.setPreferredSize(new Dimension(60, 60));
-        add(fotoPlaceholder, BorderLayout.WEST);
+        emoji.setPreferredSize(new Dimension(60, 60));
+        add(emoji, BorderLayout.WEST);
+
+        JLabel lblEmoji = new JLabel(emj);
+        lblEmoji.setFont(new Font("Arial",Font.PLAIN,28));
+        emoji.add(lblEmoji);
 
         // 2. INFORMAÇÕES (Nome, Nota, Tempo)
         JPanel infos = new JPanel(new GridLayout(2, 1, 0, 5));
@@ -340,8 +345,17 @@ class CardRestaurante extends JPanel {
         JLabel lblNome = new JLabel(nome);
         lblNome.setFont(new Font("Arial", Font.BOLD, 16));
 
+
         // Detalhes em cinza (Nota, Tempo, Frete) igual ao app
-        JLabel lblDetalhes = new JLabel("⭐ " + nota + " • " );
+        JLabel lblDetalhes;
+        if(Objects.equals(emj, "🏪")) {
+            int numNota = Integer.parseInt(avaliacao);
+            avaliacao = "⭐".repeat(numNota);
+            lblDetalhes = new JLabel("⭐ " + nota + " • " +avaliacao );
+        }else{
+            lblDetalhes = new JLabel("R$" + nota + " • " + avaliacao);
+        }
+
         lblDetalhes.setFont(new Font("Arial", Font.PLAIN, 13));
         lblDetalhes.setForeground(Color.GRAY);
 

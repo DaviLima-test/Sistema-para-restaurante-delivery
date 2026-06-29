@@ -492,7 +492,7 @@ public class TelaPedidosRestaurante extends TelaMenu {
     //  DADOS DEMO
     // ─────────────────────────────────────────────────────────
     private List<Pedido> criarPedidosDemo() {
-        Restaurante rest = new Restaurante("aa","",1);
+        Restaurante rest = new Restaurante(1,"aa","",1);
         Produto pr1 = new Produto(); pr1.setNome("X-Burguer Duplo");
         Produto pr2 = new Produto(); pr2.setNome("Pizza Margherita");
         Produto pr3 = new Produto(); pr3.setNome("Frango Grelhado");

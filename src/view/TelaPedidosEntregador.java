@@ -465,7 +465,7 @@ public class TelaPedidosEntregador extends TelaMenu {
         model.Produto pr2 = new model.Produto(); pr2.setNome("Pizza Margherita");
         model.Produto pr3 = new model.Produto(); pr3.setNome("Frango Grelhado");
 
-        model.Restaurante rest = new model.Restaurante("","",1);
+        model.Restaurante rest = new model.Restaurante(1,"","",1);
         model.Cliente cl1 = new model.Cliente("c1@mail.com",  "João Silva", "");
         model.Cliente cl2 = new model.Cliente("c2@mail.com",  "Maria Souza", "");
         model.Cliente cl3 = new model.Cliente("c3@mail.com",  "Pedro Lima", "");

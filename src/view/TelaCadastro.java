@@ -151,9 +151,12 @@ public class TelaCadastro extends JPanel{
         String str_email=email.getText();
         String str_senha=new String(senha.getPassword());
         String str_localizacao =localizacao.getText();
-            if(str_usuario.isEmpty()|| str_email.isEmpty() || str_senha.isEmpty()  ){
+
+            if(str_usuario.isEmpty()|| str_email.isEmpty() || str_senha.isEmpty() || str_localizacao.isEmpty() ){
                 JOptionPane.showMessageDialog(this,"Por favor, preencha todos os campos");
-            }else{
+            }else if(!str_email.contains("@") || !str_email.contains(".com")){
+                JOptionPane.showMessageDialog(this,"Por favor , coloque um email valido");
+            } else{
                 String str_tipo = new String();
                 if(chk_cliente.isSelected()){
                     str_tipo = "cliente";

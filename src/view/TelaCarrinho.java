@@ -30,7 +30,7 @@ public class TelaCarrinho extends TelaMenu {
         if (Dados.listaCarrinho == null) {
             Dados.listaCarrinho = new ArrayList<>();
             // Itens de demonstração inicial caso o carrinho abra vazio pela primeira vez
-            criarItensCarrinhoDemo();
+            criarItensCarrinho();
         }
 
         JPanel container = new JPanel(new BorderLayout());
@@ -314,7 +314,7 @@ public class TelaCarrinho extends TelaMenu {
 
         Produto principal = Dados.listaCarrinho.get(0);
 
-        model.Restaurante rest = new model.Restaurante("","",1);
+        model.Restaurante rest = new model.Restaurante(1,"","",1);
         model.Cliente clienteLogado = new model.Cliente(Telabase.getLogin().GetEmail(), Telabase.getLogin().GetUser(), "");
 
         Pedido novoPedido = new Pedido(principal, "Imediato", null, null, rest, clienteLogado);
@@ -342,7 +342,7 @@ public class TelaCarrinho extends TelaMenu {
         }
     }
 
-    private void criarItensCarrinhoDemo() {
+    private void criarItensCarrinho() {
         Produto p1 = new Produto(); p1.setNome("X-Burguer Duplo Cheddar");
         Produto p2 = new Produto(); p2.setNome("Batata Frita Grande Média");
         Dados.listaCarrinho.add(p1);

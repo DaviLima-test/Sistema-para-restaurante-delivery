@@ -247,7 +247,7 @@ public class BancoDados {
             Telabase.setLogin(new Login(email, nome, tipo));
 
 
-            salvarCookieLogin(nome, email, tipo, localizacao);
+            //salvarCookieLogin(nome, email, tipo, localizacao);
 
             System.out.println("Usuário cadastrado com sucesso!");
             return true;
@@ -518,6 +518,31 @@ public class BancoDados {
             return false;
         }
     }
+    public static ArrayList<Produto> getPratos(){
+            ArrayList<Produto> produtos = new ArrayList<>();
+            // Filtra direto no banco apenas os pratos daquele restaurante
+            String sql = "SELECT c.id, nome_prato, preco , nome FROM cardapio " +
+                    "AS c JOIN restaurante ON c.id_restaurante = restaurante.id;";
+
+            try (Connection conn = obterConexao();
+                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    while (rs.next()) {
+                        int codigo = rs.getInt("id");
+                        String nomePrato = rs.getString("nome_prato");
+                        double preco = rs.getDouble("preco");
+                        String restaurante = rs.getString("nome");
+                        Produto produto = new Produto(codigo, nomePrato, preco,restaurante);
+                        produtos.add(produto);
+                    }
+                }
+                return produtos;
+
+            } catch (SQLException e) {
+                System.err.println("Erro ao buscar todos os pratos " +  e.getMessage());
+                return new ArrayList<>();
+            }
+    }
     public static String[] buscarRestaurantePorGerente(String emailGerente) {
 
         if (emailGerente == null || emailGerente.isEmpty()) {
@@ -532,7 +557,7 @@ public class BancoDados {
                         "WHERE u.email = ? " +
                         "LIMIT 1";                       // um gerente → um restaurante
 
-        try (Connection conn    = obterConexao();
+        try (Connection conn = obterConexao();
              PreparedStatement p = conn.prepareStatement(sql)) {
 
             p.setString(1, emailGerente);
@@ -554,19 +579,21 @@ public class BancoDados {
 
         return null;   // gerente não tem restaurante ainda
     }
+
     public static ArrayList<Restaurante> getRestaurantes() {
-        String sql = "SELECT r.nome, r.localizacao, r.estrelas " +
+        String sql = "SELECT r.id, r.nome, r.localizacao, r.estrelas " +
                 "FROM restaurante r ";
         ArrayList<Restaurante> restaurantes = new ArrayList<>();
         try (Connection conn = obterConexao();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
+                    int id = rs.getInt("id");
                     String nome = rs.getString("nome");
                     String localizacao = rs.getString("localizacao");
                     int estrelas = rs.getInt("estrelas");
 
-                    Restaurante restaurante = new Restaurante(nome,localizacao,estrelas);
+                    Restaurante restaurante = new Restaurante(id,nome,localizacao,estrelas);
                     restaurantes.add(restaurante);
                 }
             }
@@ -674,5 +701,57 @@ public class BancoDados {
             return null;
         }
         return null;
+    }
+    public static boolean criarPedido(ArrayList<Produto> carrinho, int idRestaurante) {
+        if (carrinho == null || carrinho.isEmpty()) {
+            System.err.println("[BD] Erro: Tentativa de criar pedido com carrinho vazio.");
+            return false;
+        }
+
+        // 1. Recupera o ID do cliente logado no sistema
+        String idClienteStr = GetIdUsuario(Telabase.getLogin().GetUser(), Telabase.getLogin().GetEmail(), Telabase.getLogin().GetTipo());
+        if (idClienteStr == null) {
+            System.err.println("[BD] Erro: Não foi possível identificar o usuário logado.");
+            return false;
+        }
+        int idCliente = Integer.parseInt(idClienteStr);
+
+        // SQL que bate certinho com a estrutura da sua tabela 'pedidos'
+        // id_entregador e horario_entrega começam como NULL. O status inicia em 1 (Pendente/Aguardando)
+        String sql = "INSERT INTO pedidos (id_prato, id_restaurante, id_cliente, status) VALUES (?, ?, ?, 1);";
+
+        try (Connection conn = obterConexao()) {
+            // Desativa o auto-commit para iniciarmos uma Transação Manual (Segurança)
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+                // Loop para adicionar cada item do carrinho no lote (Batch)
+                for (Produto produto : carrinho) {
+                    pstmt.setInt(1, produto.getCodigo()); // id_prato
+                    pstmt.setInt(2, idRestaurante);       // id_restaurante
+                    pstmt.setInt(3, idCliente);           // id_cliente
+                    pstmt.addBatch();                     // Adiciona ao lote de execução
+                }
+
+                // Executa todas as inserções de uma única vez
+                pstmt.executeBatch();
+
+                // Se tudo deu certo, confirma salvando permanentemente no banco
+                conn.commit();
+                System.out.println("[BD] Pedido registrado com sucesso! Itens: " + carrinho.size());
+                return true;
+
+            } catch (SQLException e) {
+                // Caso aconteça QUALQUER erro, desfaz tudo para não corromper o pedido
+                conn.rollback();
+                System.err.println("[BD] Erro na inserção dos itens. Operação cancelada: " + e.getMessage());
+                return false;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("[BD] Erro de conexão ao tentar criar pedido: " + e.getMessage());
+            return false;
+        }
     }
 }
