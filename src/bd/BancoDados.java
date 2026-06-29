@@ -667,6 +667,7 @@ public class BancoDados {
                     String bandeira = rs.getString("bandeira");
                     boolean principal = rs.getBoolean("principal");
                     cartoes.add(new Cartao(numero, titular, validade, cvv, bandeira, principal));
+                    System.out.println("Cartão pego"+bandeira + titular);
                 }
                 return cartoes;
             }

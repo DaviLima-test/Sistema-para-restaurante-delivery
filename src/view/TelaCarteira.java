@@ -357,6 +357,7 @@ public class TelaCarteira extends TelaMenu {
 
             // Cria e adiciona o novo cartão na lista estática
             Cartao novo = new Cartao(num, tit, val, cvv, band, listaCartoesMemoria.isEmpty());
+            novo.SalvarCartao();
             listaCartoesMemoria.add(novo);
 
             JOptionPane.showMessageDialog(this, "Cartão adicionado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);

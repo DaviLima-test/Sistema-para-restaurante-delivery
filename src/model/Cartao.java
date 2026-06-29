@@ -22,7 +22,6 @@ public class Cartao {
         this.bandeira = bandeira;
         this.principal = principal;
         adequarDadosDoCartao();
-        BancoDados.salvarCartao(this);
     }
 
     public String getQuatroUltimosDigitos() {
@@ -71,5 +70,7 @@ public class Cartao {
     public static Cartao GetPrincipal(){
         return BancoDados.GetCartaoPrincipal();
     }
-
+    public void SalvarCartao(){
+        BancoDados.salvarCartao(this);
+    }
 }
