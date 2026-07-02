@@ -1,5 +1,7 @@
 package view;
 
+import util.RemoveEmoji;
+
 import model.Produto;
 import javax.swing.*;
 import java.awt.*;
@@ -311,6 +313,7 @@ public class TelaFazerPedido extends TelaMenu {
     private void atualizarPainelCarrinho() {
         corpoPrincipal.remove(painelDetalhe);
         painelDetalhe = criarPainelCarrinho();
+        RemoveEmoji.aplicar(painelDetalhe);
         corpoPrincipal.add(painelDetalhe);
         corpoPrincipal.revalidate();
         corpoPrincipal.repaint();

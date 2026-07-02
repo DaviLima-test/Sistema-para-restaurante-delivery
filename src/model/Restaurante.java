@@ -12,6 +12,11 @@ public class Restaurante {
         this.Estrelas = estrelas;
         this.Localizacao = localizacao;
     }
+
+    public Restaurante() {
+
+    }
+
     public void LancarPedido(String item, String cliente) {
         // Lógica simplificada
     }

@@ -1,15 +1,20 @@
 package model;
 
-public class Entregador extends Login {
+public class Entregador  {
     private String Nome;
     private String CPF;
+    private String email;
     private String Pedido;
     private int Estrelas;
 
-    public Entregador(String email, String senha, String user, String nome, String cpf) {
-        super(email, senha, user);
-        this.Nome = nome;
+    public Entregador(String email, String user, String cpf) {
+        this.email = email;
+        this.Nome = user;
         this.CPF = cpf;
+    }
+
+    public Entregador() {
+
     }
 
     public void AceitarPedido(Pedido pedido) {

@@ -1,5 +1,7 @@
 package view;
 
+import util.RemoveEmoji;
+
 import bd.BancoDados;
 import model.Login;
 
@@ -285,7 +287,7 @@ public class TelaNovoRestaurante extends TelaMenu {
     }
 
     private void setFeedback(String msg, Color cor) {
-        lblFeedback.setText(msg);
+        lblFeedback.setText(RemoveEmoji.texto(msg));
         lblFeedback.setForeground(cor);
     }
 }

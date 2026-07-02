@@ -176,26 +176,28 @@ public class BancoDados {
 
         String sqlTabelaPedidos = "CREATE TABLE IF NOT EXISTS pedidos(" +
                 "id INT AUTO_INCREMENT PRIMARY KEY," +
-                "id_prato INT," +
                 "id_restaurante INT," +
                 "id_cliente INT," +
                 "id_entregador INT," +
                 "status INT DEFAULT 1," +
                 "horario_entrega VARCHAR(10)," +
                 "data_pedido TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
-                "CONSTRAINT fk_pedido_cardapio" +
-                "   FOREIGN KEY (id_prato) REFERENCES cardapio(id)" +
-                "   ON DELETE CASCADE" +
-                "   ON UPDATE CASCADE," +
                 "CONSTRAINT fk_pedido_restaurante FOREIGN KEY (id_restaurante) REFERENCES restaurante(id) " +
-                "ON DELETE CASCADE " +
-                "ON UPDATE CASCADE," +
+                "   ON DELETE CASCADE ON UPDATE CASCADE," +
                 "CONSTRAINT fk_pedido_cliente FOREIGN KEY (id_cliente) REFERENCES usuarios(id) " +
-                "   ON DELETE SET NULL " +
-                "ON UPDATE CASCADE," +
+                "   ON DELETE SET NULL ON UPDATE CASCADE," +
                 "CONSTRAINT fk_pedido_entregador FOREIGN KEY (id_entregador) REFERENCES usuarios(id) " +
-                "   ON DELETE SET NULL" +
-                " ON UPDATE CASCADE" +
+                "   ON DELETE SET NULL ON UPDATE CASCADE" +
+                ");";
+        String sqlTabelaItensPedidos = "CREATE TABLE IF NOT EXISTS itens_pedido(" +
+                "id_pedido INT," +
+                "id_prato INT," +
+                "quantidade INT DEFAULT 1," +
+                "PRIMARY KEY (id_pedido, id_prato)," +
+                "CONSTRAINT fk_itens_pedido FOREIGN KEY (id_pedido) REFERENCES pedidos(id) " +
+                "   ON DELETE CASCADE ON UPDATE CASCADE," +
+                "CONSTRAINT fk_itens_cardapio FOREIGN KEY (id_prato) REFERENCES cardapio(id) " +
+                "   ON DELETE CASCADE ON UPDATE CASCADE" +
                 ");";
 
         String urlServidor = "jdbc:mysql://localhost:3306/";
@@ -219,7 +221,7 @@ public class BancoDados {
             stmt.execute(sqlTabelaCardapio);
             stmt.execute(sqlTabelaPedidos);
             stmt.execute(sqlTabelCarteira);
-
+            stmt.execute(sqlTabelaItensPedidos);
             // ALTERADO: Adicionado um campo NULL a mais para a nova coluna no INSERT IGNORE
             String sqlInsertInicial = "INSERT IGNORE INTO cookie (id, logado, nome_usuario, email_usuario, tipo_usuario, localizacao_usuario) VALUES (1, 0, NULL, NULL, NULL, NULL);";
             stmt.execute(sqlInsertInicial);
@@ -230,7 +232,6 @@ public class BancoDados {
             System.err.println("Erro ao inicializar as tabelas: " + e.getMessage());
         }
     }
-
     public static boolean cadastrarUsuario(String nome, String email, String senha, String tipo, String localizacao) {
         String sql = "INSERT INTO usuarios (nome, email, senha, tipo, localizacao) VALUES (?, ?, ?, ?, ?);";
 
@@ -467,6 +468,62 @@ public class BancoDados {
             return false;
         }
     }
+    public static Restaurante buscarRestaurantePorNome(String nomeBuscado) {
+        String sql = "SELECT id, nome, localizacao, estrelas FROM restaurante WHERE nome = ? LIMIT 1;";
+
+        try (Connection conn = obterConexao();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            // Define o nome na consulta SQL com segurança
+            pstmt.setString(1, nomeBuscado);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                // Se encontrou o restaurante no banco
+                if (rs.next()) {
+                    int id = rs.getInt("id");
+                    String nome = rs.getString("nome");
+                    String localizacao = rs.getString("localizacao");
+                    int estrelas = rs.getInt("estrelas");
+
+                    // Cria e retorna o objeto usando exatamente o seu construtor
+                    return new Restaurante(id, nome, localizacao, estrelas);
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao buscar restaurante pelo nome '" + nomeBuscado + "': " + e.getMessage());
+        }
+
+        // Retorna null caso o restaurante não exista no banco ou ocorra um erro
+        return null;
+    }
+    public static Restaurante buscarRestaurantePorId(int idBuscado) {
+        String sql = "SELECT id, nome, localizacao, estrelas FROM restaurante WHERE id = ?;";
+
+        try (Connection conn = obterConexao();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            // Define o ID na consulta (setInt ao invés de setString)
+            pstmt.setInt(1, idBuscado);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    int id = rs.getInt("id");
+                    String nome = rs.getString("nome");
+                    String localizacao = rs.getString("localizacao");
+                    int estrelas = rs.getInt("estrelas");
+
+                    // Instancia e retorna o objeto usando o seu construtor
+                    return new Restaurante(id, nome, localizacao, estrelas);
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao buscar restaurante pelo ID " + idBuscado + ": " + e.getMessage());
+        }
+
+        return null;
+    }
     public static ArrayList<Produto> getCardapioPorRestaurante(int idRestaurante) {
         ArrayList<Produto> produtos = new ArrayList<>();
         // Filtra direto no banco apenas os pratos daquele restaurante
@@ -483,7 +540,7 @@ public class BancoDados {
                     String nomePrato = rs.getString("nome_prato");
                     double preco = rs.getDouble("preco");
 
-                    Produto produto = new Produto(codigo, nomePrato, preco);
+                    Produto produto = new Produto(codigo, nomePrato, preco,buscarRestaurantePorId(idRestaurante));
                     produtos.add(produto);
                 }
             }
@@ -532,7 +589,7 @@ public class BancoDados {
                         String nomePrato = rs.getString("nome_prato");
                         double preco = rs.getDouble("preco");
                         String restaurante = rs.getString("nome");
-                        Produto produto = new Produto(codigo, nomePrato, preco,restaurante);
+                        Produto produto = new Produto(codigo, nomePrato, preco,buscarRestaurantePorNome(restaurante));
                         produtos.add(produto);
                     }
                 }
@@ -543,6 +600,7 @@ public class BancoDados {
                 return new ArrayList<>();
             }
     }
+    // (cancelamento de pedido feito via cancelarPedidoNoBanco(int idPedido), mais abaixo)
     public static String[] buscarRestaurantePorGerente(String emailGerente) {
 
         if (emailGerente == null || emailGerente.isEmpty()) {
@@ -717,41 +775,268 @@ public class BancoDados {
         }
         int idCliente = Integer.parseInt(idClienteStr);
 
-        // SQL que bate certinho com a estrutura da sua tabela 'pedidos'
-        // id_entregador e horario_entrega começam como NULL. O status inicia em 1 (Pendente/Aguardando)
-        String sql = "INSERT INTO pedidos (id_prato, id_restaurante, id_cliente, status) VALUES (?, ?, ?, 1);";
+        // SQL 1: Insere apenas os dados gerais do pedido (Sem o id_prato)
+        String sqlPedido = "INSERT INTO pedidos (id_restaurante, id_cliente, status) VALUES (?, ?, 1);";
+
+        // SQL 2: Insere os itens vinculando-os ao ID do pedido gerado
+        //        ON DUPLICATE KEY UPDATE garante segurança extra caso o mesmo prato apareça mais de uma vez
+        String sqlItens = "INSERT INTO itens_pedido (id_pedido, id_prato, quantidade) VALUES (?, ?, ?) " +
+                "ON DUPLICATE KEY UPDATE quantidade = quantidade + VALUES(quantidade);";
 
         try (Connection conn = obterConexao()) {
-            // Desativa o auto-commit para iniciarmos uma Transação Manual (Segurança)
+            // Desativa o auto-commit para garantir atomicidade (ou entra tudo ou nada)
             conn.setAutoCommit(false);
 
-            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            // PreparedStatement.RETURN_GENERATED_KEYS serve para podermos pegar o ID que o MySQL acabou de gerar
+            try (PreparedStatement pstmtPedido = conn.prepareStatement(sqlPedido, Statement.RETURN_GENERATED_KEYS);
+                 PreparedStatement pstmtItens = conn.prepareStatement(sqlItens)) {
 
-                // Loop para adicionar cada item do carrinho no lote (Batch)
-                for (Produto produto : carrinho) {
-                    pstmt.setInt(1, produto.getCodigo()); // id_prato
-                    pstmt.setInt(2, idRestaurante);       // id_restaurante
-                    pstmt.setInt(3, idCliente);           // id_cliente
-                    pstmt.addBatch();                     // Adiciona ao lote de execução
+                // --- PASSO 1: Inserir o Pedido Principal ---
+                pstmtPedido.setInt(1, idRestaurante);
+                pstmtPedido.setInt(2, idCliente);
+                pstmtPedido.executeUpdate();
+
+                // Recupera o ID gerado para o pedido
+                int idPedidoGerado = -1;
+                try (ResultSet generatedKeys = pstmtPedido.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        idPedidoGerado = generatedKeys.getInt(1);
+                    } else {
+                        throw new SQLException("Falha ao obter o ID do pedido gerado.");
+                    }
                 }
 
-                // Executa todas as inserções de uma única vez
-                pstmt.executeBatch();
+                // --- PASSO 2: Inserir os Itens do Carrinho ---
+                // Agrupa produtos repetidos (mesmo prato clicado mais de uma vez) somando a quantidade,
+                // pois a tabela itens_pedido tem chave primária composta (id_pedido, id_prato)
+                java.util.LinkedHashMap<Integer, Integer> quantidadesPorPrato = new java.util.LinkedHashMap<>();
+                for (Produto produto : carrinho) {
+                    quantidadesPorPrato.merge(produto.getCodigo(), 1, Integer::sum);
+                }
 
-                // Se tudo deu certo, confirma salvando permanentemente no banco
+                for (java.util.Map.Entry<Integer, Integer> item : quantidadesPorPrato.entrySet()) {
+                    pstmtItens.setInt(1, idPedidoGerado);
+                    pstmtItens.setInt(2, item.getKey());   // id_prato
+                    pstmtItens.setInt(3, item.getValue()); // quantidade somada
+                    pstmtItens.addBatch(); // Adiciona ao lote
+                }
+
+
+                pstmtItens.executeBatch();
+
+
                 conn.commit();
-                System.out.println("[BD] Pedido registrado com sucesso! Itens: " + carrinho.size());
+                System.out.println("[BD] Pedido #" + idPedidoGerado + " registrado com sucesso! Itens: " + carrinho.size());
                 return true;
 
             } catch (SQLException e) {
-                // Caso aconteça QUALQUER erro, desfaz tudo para não corromper o pedido
+                // Se falhar o pedido ou os itens, desfaz tudo o que foi feito nesta tentativa
                 conn.rollback();
-                System.err.println("[BD] Erro na inserção dos itens. Operação cancelada: " + e.getMessage());
+                System.err.println("[BD] Erro na transação. Operação cancelada: " + e.getMessage());
                 return false;
             }
 
         } catch (SQLException e) {
             System.err.println("[BD] Erro de conexão ao tentar criar pedido: " + e.getMessage());
+            return false;
+        }
+    }
+    // ─────────────────────────────────────────────────────────
+    //  PEDIDOS — Estados unificados (coluna única 'status'):
+    //  1 = Recebido | 2 = Em Produção | 3 = Pronto p/ Entrega
+    //  4 = Em Rota  | 5 = Entregue    | (cancelado = linha removida)
+    // ─────────────────────────────────────────────────────────
+    private static final String SQL_BASE_PEDIDOS =
+            "SELECT p.id AS id_pedido, p.status AS status_pedido, p.horario_entrega, " +
+            "p.id_restaurante, r.nome AS nome_restaurante, r.localizacao AS loc_restaurante, " +
+            "p.id_cliente, uc.nome AS nome_cliente, uc.email AS email_cliente, " +
+            "p.id_entregador, ue.nome AS nome_entregador, ue.email AS email_entregador, " +
+            "c.id AS id_prato, c.nome_prato AS nome_prato " +
+            "FROM pedidos p " +
+            "JOIN itens_pedido i ON p.id = i.id_pedido " +
+            "JOIN cardapio c ON i.id_prato = c.id " +
+            "LEFT JOIN restaurante r ON p.id_restaurante = r.id " +
+            "LEFT JOIN usuarios uc ON p.id_cliente = uc.id " +
+            "LEFT JOIN usuarios ue ON p.id_entregador = ue.id ";
+
+    private static ArrayList<Pedido> montarPedidos(PreparedStatement pstmt) throws SQLException {
+        ArrayList<Pedido> listaPedidos = new ArrayList<>();
+
+        try (ResultSet rs = pstmt.executeQuery()) {
+            Pedido pedidoAtual = null;
+            int idPedidoAnterior = -1;
+
+            while (rs.next()) {
+                int idPedido = rs.getInt("id_pedido");
+
+                if (idPedido != idPedidoAnterior) {
+                    Cliente cliente = new Cliente(
+                            rs.getString("email_cliente"),
+                            rs.getString("nome_cliente"),
+                            ""
+                    );
+
+                    Restaurante restaurante = new Restaurante(
+                            rs.getInt("id_restaurante"),
+                            rs.getString("nome_restaurante"),
+                            rs.getString("loc_restaurante"),
+                            0
+                    );
+
+                    Entregador entregador = null;
+                    rs.getInt("id_entregador");
+                    if (!rs.wasNull()) {
+                        entregador = new Entregador(
+                                rs.getString("email_entregador"),
+                                rs.getString("nome_entregador"),
+                                ""
+                        );
+                    }
+
+                    ArrayList<Produto> produtosDoPedido = new ArrayList<>();
+
+                    pedidoAtual = new Pedido(
+                            produtosDoPedido,
+                            rs.getString("horario_entrega"),
+                            null,
+                            restaurante,
+                            cliente,
+                            entregador
+                    );
+
+                    pedidoAtual.setId(idPedido);
+                    pedidoAtual.setEstado(rs.getInt("status_pedido"));
+                    listaPedidos.add(pedidoAtual);
+                    idPedidoAnterior = idPedido;
+                }
+
+                Produto produto = new Produto();
+                produto.setCodigo(rs.getInt("id_prato"));
+                produto.setNome(rs.getString("nome_prato"));
+
+                if (pedidoAtual != null) {
+                    pedidoAtual.getComidas().add(produto);
+                }
+            }
+        }
+
+        return listaPedidos;
+    }
+
+    /** Retorna o ID do usuário atualmente logado no sistema, ou -1 se não encontrado. */
+    public static int obterIdUsuarioLogado() {
+        if (Telabase.getLogin() == null) return -1;
+        String idStr = GetIdUsuario(Telabase.getLogin().GetUser(), Telabase.getLogin().GetEmail(), Telabase.getLogin().GetTipo());
+        if (idStr == null) return -1;
+        try {
+            return Integer.parseInt(idStr);
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    /** Pedidos de um cliente específico (todos os estados, mais recentes primeiro). */
+    public static ArrayList<Pedido> obterPedidosPorCliente(int idCliente) {
+        String sql = SQL_BASE_PEDIDOS + "WHERE p.id_cliente = ? ORDER BY p.id DESC;";
+        try (Connection conn = obterConexao();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, idCliente);
+            return montarPedidos(pstmt);
+        } catch (SQLException e) {
+            System.err.println("[BD] Erro ao buscar pedidos do cliente: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    /** Pedidos ativos (ainda não entregues) de um restaurante. */
+    public static ArrayList<Pedido> obterPedidosPorRestaurante(int idRestaurante) {
+        String sql = SQL_BASE_PEDIDOS + "WHERE p.id_restaurante = ? AND p.status < 4 ORDER BY p.id DESC;";
+        try (Connection conn = obterConexao();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, idRestaurante);
+            return montarPedidos(pstmt);
+        } catch (SQLException e) {
+            System.err.println("[BD] Erro ao buscar pedidos do restaurante: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    /** Pedidos prontos aguardando algum entregador aceitar (ainda sem entregador). */
+    public static ArrayList<Pedido> obterPedidosDisponiveisEntrega() {
+        String sql = SQL_BASE_PEDIDOS + "WHERE p.status IN (2, 3) AND p.id_entregador IS NULL ORDER BY p.status DESC, p.id DESC;";
+        try (Connection conn = obterConexao();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            return montarPedidos(pstmt);
+        } catch (SQLException e) {
+            System.err.println("[BD] Erro ao buscar pedidos disponíveis para entrega: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    /** Pedido que o entregador logado está entregando no momento (status 4), ou null. */
+    public static Pedido obterPedidoAtivoEntregador(int idEntregador) {
+        String sql = SQL_BASE_PEDIDOS + "WHERE p.status = 4 AND p.id_entregador = ? ORDER BY p.id DESC LIMIT 1;";
+        try (Connection conn = obterConexao();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, idEntregador);
+            ArrayList<Pedido> lista = montarPedidos(pstmt);
+            return lista.isEmpty() ? null : lista.get(0);
+        } catch (SQLException e) {
+            System.err.println("[BD] Erro ao buscar pedido ativo do entregador: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /** Atualiza o status de um pedido específico pelo seu ID. */
+    public static boolean atualizarEstadoPedido(int idPedido, int novoEstado) {
+        String sql = "UPDATE pedidos SET status = ? WHERE id = ?;";
+        try (Connection conn = obterConexao();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, novoEstado);
+            pstmt.setInt(2, idPedido);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("[BD] Erro ao atualizar estado do pedido: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /** Um entregador aceita um pedido pronto (operação atômica: só aceita se ainda estiver livre). */
+    public static boolean aceitarEntrega(int idPedido, int idEntregador) {
+        String sql = "UPDATE pedidos SET status = 4, id_entregador = ? WHERE id = ? AND status = 3 AND id_entregador IS NULL;";
+        try (Connection conn = obterConexao();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, idEntregador);
+            pstmt.setInt(2, idPedido);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("[BD] Erro ao aceitar entrega: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /** Entregador desiste da corrida: pedido volta a ficar disponível (status 3, sem entregador). */
+    public static boolean liberarEntrega(int idPedido) {
+        String sql = "UPDATE pedidos SET status = 3, id_entregador = NULL WHERE id = ?;";
+        try (Connection conn = obterConexao();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, idPedido);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("[BD] Erro ao liberar entrega: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /** Cancela (remove) um pedido específico pelo seu ID. */
+    public static boolean cancelarPedidoNoBanco(int idPedido) {
+        String sql = "DELETE FROM pedidos WHERE id = ?;";
+        try (Connection conn = obterConexao();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, idPedido);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("[BD] Erro ao cancelar pedido: " + e.getMessage());
             return false;
         }
     }

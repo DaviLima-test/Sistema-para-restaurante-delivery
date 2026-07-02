@@ -1,7 +1,11 @@
 package view;
 
+import bd.BancoDados;
+import model.Produto;
+import util.RemoveEmoji;
 import model.Pedido;
 import repositorio.Dados;
+import bd.BancoDados; // IMPORTANTE: Import do seu Banco de Dados
 
 import javax.swing.*;
 import java.awt.*;
@@ -15,7 +19,6 @@ public class TelaPedidosCliente extends TelaMenu {
     private JPanel corpoPrincipal;
     private Pedido pedidoSelecionado;
 
-    // Cores padronizadas do projeto
     private static final Color COR_PRIMARIA   = new Color(234, 16, 34);
     private static final Color COR_VERDE      = new Color(46, 174, 82);
     private static final Color COR_CINZA_BG   = new Color(245, 245, 245);
@@ -30,7 +33,6 @@ public class TelaPedidosCliente extends TelaMenu {
         container.setBackground(Color.WHITE);
         container.add(criarCabecalho(), BorderLayout.NORTH);
 
-        // Estrutura Dividida (40% / 60%)
         corpoPrincipal = new JPanel(new GridLayout(1, 2, 20, 0));
         corpoPrincipal.setBackground(Color.WHITE);
         corpoPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
@@ -55,12 +57,12 @@ public class TelaPedidosCliente extends TelaMenu {
                 BorderFactory.createEmptyBorder(16, 30, 16, 30)
         ));
 
-        Texto titulo = new Texto("🛍️  Meus Pedidos Realizados");
+        Texto titulo = new Texto("Meus Pedidos Realizados");
         titulo.setFont(new Font("Arial", Font.BOLD, 20));
         titulo.setForeground(new Color(30, 30, 30));
         p.add(titulo, BorderLayout.WEST);
 
-        BotaoArredondado btnAtualizar = new BotaoArredondado("↻  Atualizar Status", 20, COR_PRIMARIA, 14);
+        BotaoArredondado btnAtualizar = new BotaoArredondado("Atualizar Status", 20, COR_PRIMARIA, 14);
         btnAtualizar.setPreferredSize(new Dimension(160, 38));
         btnAtualizar.addActionListener(e -> atualizarTela());
         p.add(btnAtualizar, BorderLayout.EAST);
@@ -82,6 +84,7 @@ public class TelaPedidosCliente extends TelaMenu {
         lista.setLayout(new BoxLayout(lista, BoxLayout.Y_AXIS));
         lista.setBackground(Color.WHITE);
 
+        // ALTERADO: Agora busca direto do banco de dados
         List<Pedido> meusPedidos = obterMeusPedidos();
 
         if (meusPedidos.isEmpty()) {
@@ -128,15 +131,22 @@ public class TelaPedidosCliente extends TelaMenu {
         gbc.gridheight = 1;
         gbc.insets = new Insets(0, 0, 3, 0);
 
-        JLabel lblNome = new JLabel(p.getComida() != null ? p.getComida() : "Produto");
+        // Concatena o nome dos itens para exibir no card
+        StringBuilder nomesComidas = new StringBuilder();
+        for (Produto prod : p.getComidas()) {
+            if (nomesComidas.length() > 0) nomesComidas.append(", ");
+            nomesComidas.append(prod.getNome());
+        }
+
+        JLabel lblNome = new JLabel(nomesComidas.length() > 0 ? nomesComidas.toString() : "Produto");
         lblNome.setFont(new Font("Arial", Font.BOLD, 15));
         gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         card.add(lblNome, gbc);
 
-        String[] textos = {"", "Aguardando", "Em trânsito", "Entregue"};
-        Color[] cores   = {Color.GRAY, new Color(200, 130, 0), COR_PRIMARIA, COR_VERDE};
-        int st = Math.max(1, Math.min(p.getEstado(), 3));
+        String[] textos = {"", "Recebido", "Em preparo", "Pronto", "A caminho", "Entregue"};
+        Color[] cores   = {Color.GRAY, new Color(200, 130, 0), new Color(200, 130, 0), new Color(29, 78, 216), COR_PRIMARIA, COR_VERDE};
+        int st = Math.max(1, Math.min(p.getEstado(), 5));
 
         JLabel lblStatus = new JLabel("● " + textos[st]);
         lblStatus.setFont(new Font("Arial", Font.BOLD, 12));
@@ -185,21 +195,27 @@ public class TelaPedidosCliente extends TelaMenu {
         painel.add(lblTitulo);
         painel.add(Box.createVerticalStrut(20));
 
-        painel.add(criarSecao("📦 Resumo", new String[][]{
-                {"Item Solicitado", p.getComida()},
+        // ALTERADO: Junta o nome dos produtos para a seção Resumo
+        StringBuilder itensLista = new StringBuilder();
+        for (Produto prod : p.getComidas()) {
+            if (itensLista.length() > 0) itensLista.append(", ");
+            itensLista.append(prod.getNome());
+        }
+
+        painel.add(criarSecao("Resumo", new String[][]{
+                {"Itens Solicitados", itensLista.toString()},
                 {"Previsão de Entrega", p.getHora_Entregue() != null ? p.getHora_Entregue() : "Em breve"}
         }));
         painel.add(Box.createVerticalStrut(14));
 
-        String entregador = (p.getEstado() == 2) ? "Carlos Entregador" : (p.getEstado() == 3) ? "Entregue" : "Buscando entregador parceiro...";
-        painel.add(criarSecao("🛵 Status do Envio", new String[][]{
-                {"Entregador Responsável", entregador},
+        String nomeEntregador = (p.getEntregador() != null && p.getEstado() >= 2) ? "Motoboy Parceiro" : "Buscando entregador parceiro...";
+        painel.add(criarSecao("Status do Envio", new String[][]{
+                {"Entregador Responsável", nomeEntregador},
                 {"Endereço de Destino", "Rua das Oliveiras, 452 - Apt 12"}
         }));
 
         painel.add(Box.createVerticalGlue());
 
-        // Botão de ação do cliente: Cancelar se estiver pendente
         if (p.getEstado() == 1) {
             BotaoArredondado btnCancelar = new BotaoArredondado("Cancelar Pedido", 20, COR_PRIMARIA, 14);
             btnCancelar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
@@ -246,16 +262,27 @@ public class TelaPedidosCliente extends TelaMenu {
         pedidoSelecionado = p;
         corpoPrincipal.remove(painelDetalhe);
         painelDetalhe = criarPainelDetalhePreenchido(p);
+        RemoveEmoji.aplicar(painelDetalhe);
         corpoPrincipal.add(painelDetalhe);
         corpoPrincipal.revalidate();
         corpoPrincipal.repaint();
     }
 
+    // ALTERADO: Lógica de exclusão/cancelamento integrada com o Banco de Dados
     private void cancelarPedido(Pedido p) {
         int r = JOptionPane.showConfirmDialog(this, "Deseja realmente cancelar este pedido?", "Cancelar", JOptionPane.YES_NO_OPTION);
         if (r == JOptionPane.YES_OPTION) {
-            Dados.listaPedidos.remove(p);
-            atualizarTela();
+
+            // Supondo que você tenha ou adicionará um método deletarPedido(id) na sua classe de banco
+            // Se a sua classe Pedido ainda não tiver getIdPedido(), passe as referências do cliente.
+            boolean canceladoComSucesso = BancoDados.cancelarPedidoNoBanco(p.getId());
+
+            if (canceladoComSucesso) {
+                JOptionPane.showMessageDialog(this, "Pedido cancelado com sucesso!");
+                atualizarTela();
+            } else {
+                JOptionPane.showMessageDialog(this, "Erro ao cancelar o pedido no servidor.", "Erro", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 
@@ -264,8 +291,10 @@ public class TelaPedidosCliente extends TelaMenu {
         if (sist != null) sist.configuraTela(new TelaPedidosCliente(sist));
     }
 
+    // ALTERADO: Busca apenas os pedidos do cliente atualmente logado
     private List<Pedido> obterMeusPedidos() {
-        if (Dados.listaPedidos == null) Dados.listaPedidos = new java.util.ArrayList<>();
-        return Dados.listaPedidos; // Retorna a lista global compartilhada
+        int idCliente = BancoDados.obterIdUsuarioLogado();
+        if (idCliente == -1) return new java.util.ArrayList<>();
+        return BancoDados.obterPedidosPorCliente(idCliente);
     }
 }

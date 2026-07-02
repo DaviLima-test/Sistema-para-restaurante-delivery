@@ -1,5 +1,7 @@
 package view;
 
+import util.RemoveEmoji;
+
 import model.Produto;
 import javax.swing.*;
 import java.awt.*;
@@ -83,8 +85,8 @@ public class TelaGerenciarRestaurante extends TelaMenu {
 
         p.add(titulos, BorderLayout.WEST);
 
-        // Botão principal de ação
-        BotaoArredondado btnAdd = new BotaoArredondado("＋  Adicionar Prato", 20, COR_VERDE, 14);
+        // Botão principal de ação (Emoji removido aqui)
+        BotaoArredondado btnAdd = new BotaoArredondado("Adicionar Prato", 20, COR_VERDE, 14);
         btnAdd.setPreferredSize(new Dimension(170, 42));
         btnAdd.addActionListener(e -> abrirFormulario(null)); // null = modo criação
         p.add(btnAdd, BorderLayout.EAST);
@@ -111,7 +113,7 @@ public class TelaGerenciarRestaurante extends TelaMenu {
         lista.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
         if (cardapio.isEmpty()) {
-            JLabel vazio = new JLabel("Nenhum prato cadastrado. Clique em '+ Adicionar Prato'.");
+            JLabel vazio = new JLabel("Nenhum prato cadastrado. Clique em 'Adicionar Prato'.");
             vazio.setFont(new Font("Arial", Font.ITALIC, 13));
             vazio.setForeground(Color.GRAY);
             vazio.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -206,7 +208,7 @@ public class TelaGerenciarRestaurante extends TelaMenu {
         JLabel dica = new JLabel(
                 "<html><div style='text-align:center;color:#bbb'>" +
                         "👆<br><br>Selecione um prato<br>para editar ou remover" +
-                        "<br><br>ou clique em<br><b style='color:#ea1022'>+ Adicionar Prato</b><br>para criar um novo" +
+                        "<br><br>ou clique em<br><b style='color:#ea1022'>Adicionar Prato</b><br>para criar um novo" +
                         "</div></html>"
         );
         dica.setFont(new Font("Arial", Font.PLAIN, 15));
@@ -275,7 +277,7 @@ public class TelaGerenciarRestaurante extends TelaMenu {
                 BorderFactory.createEmptyBorder(24, 24, 24, 24)
         ));
 
-        JLabel lblTitulo = new JLabel(modoEdicao ? "✏  Editar Prato" : "＋  Novo Prato");
+        JLabel lblTitulo = new JLabel(modoEdicao ? "✏  Editar Prato" : "Novo Prato");
         lblTitulo.setFont(new Font("Arial", Font.BOLD, 18));
         lblTitulo.setForeground(new Color(30, 30, 30));
         lblTitulo.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -310,7 +312,8 @@ public class TelaGerenciarRestaurante extends TelaMenu {
         btnRow.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         Color corSalvar = modoEdicao ? COR_AMARELO : COR_VERDE;
-        String textoSalvar = modoEdicao ? "💾  Salvar Edição" : "＋  Adicionar Prato";
+        // Emoji removido aqui também
+        String textoSalvar = modoEdicao ? "  Salvar Edição" : "Adicionar Prato";
         BotaoArredondado btnSalvar  = new BotaoArredondado(textoSalvar, 20, corSalvar, 14);
         BotaoArredondado btnCancelar = new BotaoArredondado("Cancelar", 20, new Color(160, 160, 160), 14);
 
@@ -319,7 +322,7 @@ public class TelaGerenciarRestaurante extends TelaMenu {
             String precoTxt = campoPreco.getText().trim().replace(",", ".");
 
             if (nome.isEmpty() || precoTxt.isEmpty()) {
-                lblFeedback.setText("⚠  Preencha todos os campos.");
+                lblFeedback.setText(RemoveEmoji.texto("⚠  Preencha todos os campos."));
                 lblFeedback.setForeground(COR_PRIMARIA);
                 return;
             }
@@ -329,7 +332,7 @@ public class TelaGerenciarRestaurante extends TelaMenu {
                 preco = Double.parseDouble(precoTxt);
                 if (preco <= 0) throw new NumberFormatException();
             } catch (NumberFormatException ex) {
-                lblFeedback.setText("⚠  Preço inválido. Use Ex: 29.90");
+                lblFeedback.setText(RemoveEmoji.texto("⚠  Preço inválido. Use Ex: 29.90"));
                 lblFeedback.setForeground(COR_PRIMARIA);
                 return;
             }
@@ -339,7 +342,7 @@ public class TelaGerenciarRestaurante extends TelaMenu {
                 produtoEdit.setNome(nome);
                 produtoEdit.setPreco(preco);
                 BancoDados.atualizarCardapio(produtoEdit.getCodigo(), nome, String.valueOf(preco)); // integrar quando BD estiver ok
-                lblFeedback.setText("✅  Produto atualizado!");
+                lblFeedback.setText(RemoveEmoji.texto("✅  Produto atualizado!"));
                 lblFeedback.setForeground(COR_VERDE);
             } else {
 
@@ -355,7 +358,7 @@ public class TelaGerenciarRestaurante extends TelaMenu {
                 }catch(NullPointerException exception){
                     System.out.println("Os daddos do cardapio estão null!");
                 }
-                    lblFeedback.setText("✅  Produto adicionado!");
+                lblFeedback.setText(RemoveEmoji.texto("✅  Produto adicionado!"));
                 lblFeedback.setForeground(COR_VERDE);
             }
 
@@ -472,6 +475,7 @@ public class TelaGerenciarRestaurante extends TelaMenu {
     private void trocarPainelDetalhe(JPanel novoPainel) {
         corpoPrincipal.remove(painelDetalhe);
         painelDetalhe = novoPainel;
+        RemoveEmoji.aplicar(painelDetalhe);
         corpoPrincipal.add(painelDetalhe);
         corpoPrincipal.revalidate();
         corpoPrincipal.repaint();
@@ -482,20 +486,20 @@ public class TelaGerenciarRestaurante extends TelaMenu {
     // ─────────────────────────────────────────────────────────
     private void setCardapio() {
 
-            if (dadosRestaurante != null && dadosRestaurante.length > 0) {
-                try {
-                    // Converte o ID que veio em String para int
-                    int idRestaurante = Integer.parseInt(dadosRestaurante[0]);
+        if (dadosRestaurante != null && dadosRestaurante.length > 0) {
+            try {
+                // Converte o ID que veio em String para int
+                int idRestaurante = Integer.parseInt(dadosRestaurante[0]);
 
-                    // Busca o cardápio filtrado por esse ID
-                    cardapio = BancoDados.getCardapioPorRestaurante(idRestaurante);
-                } catch (NumberFormatException e) {
-                    System.err.println("Erro ao converter o ID do restaurante para número: " + e.getMessage());
-                    cardapio = new ArrayList<>();
-                }
-            } else {
+                // Busca o cardápio filtrado por esse ID
+                cardapio = BancoDados.getCardapioPorRestaurante(idRestaurante);
+            } catch (NumberFormatException e) {
+                System.err.println("Erro ao converter o ID do restaurante para número: " + e.getMessage());
                 cardapio = new ArrayList<>();
             }
+        } else {
+            cardapio = new ArrayList<>();
         }
+    }
 
 }

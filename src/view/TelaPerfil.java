@@ -1,5 +1,7 @@
 package view;
 
+import util.RemoveEmoji;
+
 import bd.BancoDados;
 import model.Login;
 
@@ -405,7 +407,7 @@ public class TelaPerfil extends TelaMenu {
         try {
             int qtd = Integer.parseInt(qtdStr);
             qtd = Math.max(0, Math.min(5, qtd));
-            return "★".repeat(qtd) + "☆".repeat(5 - qtd);
+            return "*".repeat(qtd) + "".repeat(5 - qtd);
         } catch (NumberFormatException e) {
             return "—";
         }
@@ -417,6 +419,7 @@ public class TelaPerfil extends TelaMenu {
     private void exibirFormularioSenha() {
         corpoPrincipal.remove(painelDetalhe);
         painelDetalhe = criarPainelFormularioSenha();
+        RemoveEmoji.aplicar(painelDetalhe);
         corpoPrincipal.add(painelDetalhe);
         corpoPrincipal.revalidate();
         corpoPrincipal.repaint();

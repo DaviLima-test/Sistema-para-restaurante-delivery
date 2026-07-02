@@ -1,5 +1,7 @@
 package view;
 
+import util.RemoveEmoji;
+
 import model.Cartao;
 
 import javax.swing.*;
@@ -426,6 +428,7 @@ public class TelaCarteira extends TelaMenu {
         cartaoSelecionado = c;
         corpoPrincipal.remove(painelDetalhe);
         painelDetalhe = criarPainelDetalhePreenchido(c);
+        RemoveEmoji.aplicar(painelDetalhe);
         corpoPrincipal.add(painelDetalhe);
         corpoPrincipal.revalidate();
         corpoPrincipal.repaint();
@@ -435,6 +438,7 @@ public class TelaCarteira extends TelaMenu {
         cartaoSelecionado = null;
         corpoPrincipal.remove(painelDetalhe);
         painelDetalhe = criarPainelFormularioCadastro();
+        RemoveEmoji.aplicar(painelDetalhe);
         corpoPrincipal.add(painelDetalhe);
         corpoPrincipal.revalidate();
         corpoPrincipal.repaint();

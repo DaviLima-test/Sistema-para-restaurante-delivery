@@ -1,5 +1,8 @@
 package view;
 
+import bd.BancoDados;
+import util.RemoveEmoji;
+
 import model.Cartao;
 import model.Pedido;
 import model.Produto;
@@ -317,22 +320,21 @@ public class TelaCarrinho extends TelaMenu {
         model.Restaurante rest = new model.Restaurante(1,"","",1);
         model.Cliente clienteLogado = new model.Cliente(Telabase.getLogin().GetEmail(), Telabase.getLogin().GetUser(), "");
 
-        Pedido novoPedido = new Pedido(principal, "Imediato", null, null, rest, clienteLogado);
-        novoPedido.setEstado(1);
+        boolean sucessoBanco = BancoDados.criarPedido(Dados.listaCarrinho, Dados.listaCarrinho.get(0).getRestaurante().getId());
 
-        if (Dados.listaPedidos == null) {
-            Dados.listaPedidos = new ArrayList<>();
-        }
-        Dados.listaPedidos.add(novoPedido);
+        if (sucessoBanco) {
+            Dados.listaCarrinho.clear();
+            JOptionPane.showMessageDialog(this,
+                    util.RemoveEmoji.texto("🎉 Pedido enviado com sucesso!\nO restaurante já começou a preparar sua refeição."),
+                    "Sucesso!", JOptionPane.INFORMATION_MESSAGE);
 
-        Dados.listaCarrinho.clear();
-
-        JOptionPane.showMessageDialog(this,
-                "🎉 Pedido enviado com sucesso!\nO restaurante já começou a preparar sua refeição.",
-                "Sucesso!", JOptionPane.INFORMATION_MESSAGE);
-
-        if (sist != null) {
-            sist.configuraTela(new TelaPedidosCliente(sist));
+            if (sist != null) {
+                sist.configuraTela(new TelaPedidosCliente(sist));
+            }
+        } else {
+            JOptionPane.showMessageDialog(this,
+                    "⚠️ Não foi possível processar seu pedido no banco de dados.",
+                    "Erro", JOptionPane.ERROR_MESSAGE);
         }
     }
 

@@ -1,10 +1,9 @@
 package view;
 
-import model.Pedido;
 import model.Produto;
-import model.Cliente;
-import model.Restaurante;
-import repositorio.Dados;
+import util.RemoveEmoji;
+import model.Pedido;
+import bd.BancoDados; // IMPORTANTE: Apontando para o pacote correto do banco
 
 import javax.swing.*;
 import java.awt.*;
@@ -13,23 +12,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 /**
- * TelaPedidosRestaurante — Pedidos recebidos pelo restaurante.
- *
- * Layout (padrão TelaMenu — idêntico ao TelaPedidosEntregador):
- * ┌──────────────────────────────────────────────────────┐
- * │  Header (TelaMenu)                                   │
- * ├──────────────────────────────────────────────────────┤
- * │  Cabeçalho da tela  [↻ Atualizar]                   │
- * ├────────────────────────┬─────────────────────────────┤
- * │  Lista de pedidos (40%)│  Detalhe do pedido (60%)    │
- * │  card por status       │  Placeholder → detalhes     │
- * └────────────────────────┴─────────────────────────────┘
- *
- * Estados do pedido (do ponto de vista do restaurante):
- *  1 = Recebido (novo, aguardando ação do restaurante)
- *  2 = Em Produção
- *  3 = Pronto / Aguardando Entregador
- *  4 = Finalizado (entregue)
+ * TelaPedidosRestaurante — Pedidos recebidos pelo restaurante conectados ao Banco de Dados.
  */
 public class TelaPedidosRestaurante extends TelaMenu {
 
@@ -43,27 +26,31 @@ public class TelaPedidosRestaurante extends TelaMenu {
     static final int ESTADO_RECEBIDO   = 1;
     static final int ESTADO_PRODUCAO   = 2;
     static final int ESTADO_PRONTO     = 3;
-    static final int ESTADO_FINALIZADO = 4;
+    static final int ESTADO_EM_ROTA    = 4;
+    static final int ESTADO_FINALIZADO = 5;
 
     private static final String[] LABEL_ESTADO = {
-        "", "Recebido", "Em Produção", "Pronto p/ Entrega", "Finalizado"
+            "", "Recebido", "Em Produção", "Pronto p/ Entrega", "Em Rota", "Entregue"
     };
     private static final Color[] BG_ESTADO = {
-        Color.GRAY,
-        new Color(255, 243, 205),   // amarelo suave
-        new Color(219, 234, 254),   // azul suave
-        new Color(209, 250, 229),   // verde suave
-        new Color(243, 244, 246)    // cinza
+            Color.GRAY,
+            new Color(255, 243, 205),   // amarelo suave
+            new Color(219, 234, 254),   // azul suave
+            new Color(209, 250, 229),   // verde suave
+            new Color(255, 228, 230),   // rosa suave (em rota)
+            new Color(243, 244, 246)    // cinza
     };
     private static final Color[] FG_ESTADO = {
-        Color.GRAY,
-        new Color(133, 100,   4),   // amarelo escuro
-        new Color( 29,  78, 216),   // azul escuro
-        new Color( 21,  87,  36),   // verde escuro
-        new Color( 80,  80,  80)    // cinza
+            Color.GRAY,
+            new Color(133, 100,   4),   // amarelo escuro
+            new Color( 29,  78, 216),   // azul escuro
+            new Color( 21,  87,  36),   // verde escuro
+            new Color(234,  16,  34),   // vermelho (em rota)
+            new Color( 80,  80,  80)    // cinza
     };
+
     private static final String[] ICON_ESTADO = {
-        "", "🕐", "\uD83C\uDF73", "✅", "📦"
+            "", "", "", "", "", ""
     };
 
     private static final Color COR_PRIMARIA   = new Color(234, 16, 34);
@@ -73,14 +60,26 @@ public class TelaPedidosRestaurante extends TelaMenu {
     private static final Color COR_BORDA      = new Color(230, 230, 230);
     private static final Color COR_CARD_HOVER = new Color(255, 242, 242);
 
+    /** Descobre o ID do restaurante gerenciado pelo usuário logado (ou -1 se não encontrado). */
+    private static int idRestauranteAtual() {
+        String[] dados = bd.BancoDados.buscarRestaurantePorGerente(Telabase.getLogin().GetEmail());
+        if (dados == null || dados.length == 0) return -1;
+        try {
+            return Integer.parseInt(dados[0]);
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    private static List<Pedido> pedidosDoRestaurante() {
+        int idRest = idRestauranteAtual();
+        if (idRest == -1) return new ArrayList<>();
+        return bd.BancoDados.obterPedidosPorRestaurante(idRest);
+    }
+
     public TelaPedidosRestaurante(Telabase sist) {
         super(sist);
         this.sist = sist;
-
-        // Garante dados demo se lista vazia
-        if (Dados.listaPedidos == null || Dados.listaPedidos.isEmpty()) {
-            Dados.listaPedidos = new ArrayList<>(criarPedidosDemo());
-        }
 
         JPanel container = new JPanel(new BorderLayout());
         container.setBackground(Color.WHITE);
@@ -118,16 +117,15 @@ public class TelaPedidosRestaurante extends TelaMenu {
         titulos.setLayout(new BoxLayout(titulos, BoxLayout.Y_AXIS));
         titulos.setOpaque(false);
 
-        Texto titulo = new Texto("🧾  Pedidos do Restaurante");
+        Texto titulo = new Texto("Pedidos do Restaurante");
         titulo.setFont(new Font("Arial", Font.BOLD, 20));
         titulo.setForeground(new Color(30, 30, 30));
-        titulo.setHorizontalAlignment(SwingConstants.LEFT);
         titulos.add(titulo);
 
-        long emProducao = Dados.listaPedidos.stream()
-                .filter(pd -> pd.getEstadoRestaurante() == ESTADO_PRODUCAO).count();
-        long recebidos  = Dados.listaPedidos.stream()
-                .filter(pd -> pd.getEstadoRestaurante() == ESTADO_RECEBIDO).count();
+        // ALTERADO: Estatísticas vindas em tempo real do banco de dados
+        List<Pedido> totalPedidos = pedidosDoRestaurante();
+        long emProducao = totalPedidos.stream().filter(pd -> pd.getEstado() == ESTADO_PRODUCAO).count();
+        long recebidos  = totalPedidos.stream().filter(pd -> pd.getEstado() == ESTADO_RECEBIDO).count();
 
         JLabel sub = new JLabel(recebidos + " novos  •  " + emProducao + " em produção");
         sub.setFont(new Font("Arial", Font.PLAIN, 13));
@@ -136,9 +134,9 @@ public class TelaPedidosRestaurante extends TelaMenu {
 
         p.add(titulos, BorderLayout.WEST);
 
-        BotaoArredondado btnAtualizar = new BotaoArredondado("↻  Atualizar", 20, COR_PRIMARIA, 14);
+        BotaoArredondado btnAtualizar = new BotaoArredondado("Atualizar", 20, COR_PRIMARIA, 14);
         btnAtualizar.setPreferredSize(new Dimension(130, 42));
-        btnAtualizar.addActionListener(e -> sist.configuraTela(new TelaPedidosRestaurante(sist)));
+        btnAtualizar.addActionListener(e -> atualizarTela());
         p.add(btnAtualizar, BorderLayout.EAST);
 
         return p;
@@ -151,7 +149,6 @@ public class TelaPedidosRestaurante extends TelaMenu {
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setBackground(Color.WHITE);
 
-        // Tabs de filtro por status
         JPanel tabs = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         tabs.setOpaque(false);
         tabs.setBorder(BorderFactory.createEmptyBorder(0, 0, 12, 0));
@@ -161,19 +158,17 @@ public class TelaPedidosRestaurante extends TelaMenu {
             BotaoArredondado btn = new BotaoArredondado(f, 20,
                     f.equals("Todos") ? COR_PRIMARIA : new Color(200, 200, 200), 12);
             btn.setPreferredSize(new Dimension(90, 30));
-            // Futura integração: adicionar ActionListener para filtrar a lista
             tabs.add(btn);
         }
         wrapper.add(tabs, BorderLayout.NORTH);
 
-        // Lista de cards
         JPanel lista = new JPanel();
         lista.setLayout(new BoxLayout(lista, BoxLayout.Y_AXIS));
         lista.setBackground(Color.WHITE);
         lista.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
-        List<Pedido> pedidos = Dados.listaPedidos;
-        // Ordena: Recebidos primeiro, depois Em Produção, depois Prontos, Finalizados por último
+        // ALTERADO: Carregando dados atualizados do banco
+        List<Pedido> pedidos = pedidosDoRestaurante();
         pedidos.sort((a, b) -> {
             int ea = safeEstado(a), eb = safeEstado(b);
             if (ea == ESTADO_FINALIZADO && eb != ESTADO_FINALIZADO) return 1;
@@ -198,14 +193,12 @@ public class TelaPedidosRestaurante extends TelaMenu {
         JScrollPane scrollLista = new JScrollPane(lista);
         scrollLista.setBorder(BorderFactory.createLineBorder(COR_BORDA, 1, true));
         scrollLista.getVerticalScrollBar().setUnitIncrement(16);
-        scrollLista.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollLista.setPreferredSize(new Dimension(0, 500));
         wrapper.add(scrollLista, BorderLayout.CENTER);
 
         return wrapper;
     }
 
-    /** Card de pedido — mesmo padrão do TelaPedidosEntregador */
     private JPanel criarCardPedido(Pedido pd) {
         JPanel card = new JPanel(new GridBagLayout());
         card.setBackground(Color.WHITE);
@@ -229,13 +222,19 @@ public class TelaPedidosRestaurante extends TelaMenu {
         gbc.gridheight = 1;
         gbc.insets = new Insets(0, 0, 3, 0);
 
-        JLabel lblNome = new JLabel(pd.getComida() != null ? pd.getComida() : "Produto");
+        // ALTERADO: Agrupa os nomes das comidas da lista (ArrayList)
+        StringBuilder nomesComidas = new StringBuilder();
+        for (Produto prod : pd.getComidas()) {
+            if (nomesComidas.length() > 0) nomesComidas.append(", ");
+            nomesComidas.append(prod.getNome());
+        }
+
+        JLabel lblNome = new JLabel(nomesComidas.length() > 0 ? nomesComidas.toString() : "Produtos");
         lblNome.setFont(new Font("Arial", Font.BOLD, 15));
         gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         card.add(lblNome, gbc);
 
-        // Badge de status com cor dinâmica
         JLabel badge = new JLabel("  " + LABEL_ESTADO[st] + "  ");
         badge.setFont(new Font("Arial", Font.BOLD, 11));
         badge.setOpaque(true);
@@ -244,20 +243,19 @@ public class TelaPedidosRestaurante extends TelaMenu {
         badge.setBorder(BorderFactory.createEmptyBorder(2, 6, 2, 6));
         gbc.gridx = 2; gbc.gridy = 0; gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
-        gbc.insets = new Insets(0, 12, 3, 0);
         card.add(badge, gbc);
 
+        // ALTERADO: Chamando getNome() do cliente conforme especificado
         String clienteNome = pd.getCliente() != null ? pd.getCliente().getNome() : "Cliente";
-        String hora        = pd.getHora_Entregue() != null ? pd.getHora_Entregue() : "--:--";
-        JLabel detalhe = new JLabel("👤 " + clienteNome + "  •  Pedido para " + hora);
+        String hora        = pd.getHora_Entregue() != null ? pd.getHora_Entregue() : "Imediato";
+
+        JLabel detalhe = new JLabel(clienteNome + "  •  Pedido para " + hora);
         detalhe.setFont(new Font("Arial", Font.PLAIN, 12));
         detalhe.setForeground(Color.GRAY);
         gbc.gridx = 1; gbc.gridy = 1; gbc.weightx = 1.0;
         gbc.gridwidth = 2; gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(0, 0, 0, 0);
         card.add(detalhe, gbc);
 
-        // Hover + clique
         card.addMouseListener(new MouseAdapter() {
             @Override public void mouseEntered(MouseEvent e) { card.setBackground(COR_CARD_HOVER); }
             @Override public void mouseExited(MouseEvent e)  {
@@ -269,19 +267,16 @@ public class TelaPedidosRestaurante extends TelaMenu {
         return card;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  PLACEHOLDER
-    // ─────────────────────────────────────────────────────────
     private JPanel criarPlaceholder() {
         JPanel p = new JPanel(new GridBagLayout());
         p.setBackground(COR_CINZA_BG);
         p.setBorder(BorderFactory.createLineBorder(COR_BORDA, 1, true));
 
         JLabel dica = new JLabel(
-            "<html><div style='text-align:center;color:#bbb'>" +
-            "👆<br><br>Selecione um pedido<br>na lista ao lado<br>" +
-            "para ver os detalhes<br>e gerenciar a produção" +
-            "</div></html>"
+                "<html><div style='text-align:center;color:#bbb'>" +
+                        "Selecione um pedido<br>na lista ao lado<br>" +
+                        "para ver os detalhes<br>e gerenciar a produção" +
+                        "</div></html>"
         );
         dica.setFont(new Font("Arial", Font.PLAIN, 15));
         dica.setHorizontalAlignment(SwingConstants.CENTER);
@@ -289,9 +284,6 @@ public class TelaPedidosRestaurante extends TelaMenu {
         return p;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  DETALHE DO PEDIDO
-    // ─────────────────────────────────────────────────────────
     private JPanel criarPainelDetalhe(Pedido pd) {
         JPanel painel = new JPanel();
         painel.setLayout(new BoxLayout(painel, BoxLayout.Y_AXIS));
@@ -301,43 +293,45 @@ public class TelaPedidosRestaurante extends TelaMenu {
                 BorderFactory.createEmptyBorder(24, 24, 24, 24)
         ));
 
-        // ─ Título
         JLabel lblTitulo = new JLabel("Detalhes do Pedido");
         lblTitulo.setFont(new Font("Arial", Font.BOLD, 18));
         lblTitulo.setForeground(new Color(30, 30, 30));
-        lblTitulo.setAlignmentX(Component.LEFT_ALIGNMENT);
         painel.add(lblTitulo);
         painel.add(Box.createVerticalStrut(8));
 
-        // Badge de status
         int st = safeEstado(pd);
-        JLabel badge = new JLabel("  " + ICON_ESTADO[st] + "  " + LABEL_ESTADO[st] + "  ");
+        JLabel badge = new JLabel("  " + LABEL_ESTADO[st] + "  ");
         badge.setFont(new Font("Arial", Font.BOLD, 13));
         badge.setOpaque(true);
         badge.setBackground(BG_ESTADO[st]);
         badge.setForeground(FG_ESTADO[st]);
         badge.setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
-        badge.setAlignmentX(Component.LEFT_ALIGNMENT);
         painel.add(badge);
         painel.add(Box.createVerticalStrut(20));
 
-        // ─ Seções de dados
-        painel.add(criarSecao("🍔  Pedido", new String[][]{
-            {"Item",     pd.getComida() != null ? pd.getComida() : "—"},
-            {"Horário",  pd.getHora_Entregue() != null ? pd.getHora_Entregue() : "—"},
-            {"Status",   LABEL_ESTADO[st]}
+        // ALTERADO: Agrupa strings de pratos para a seção resumida de detalhes
+        StringBuilder listaItens = new StringBuilder();
+        for (Produto prod : pd.getComidas()) {
+            if (listaItens.length() > 0) listaItens.append(", ");
+            listaItens.append(prod.getNome());
+        }
+
+        painel.add(criarSecao("Pedido", new String[][]{
+                {"Itens",    listaItens.toString()},
+                {"Horário",  pd.getHora_Entregue() != null ? pd.getHora_Entregue() : "Imediato"},
+                {"Status",   LABEL_ESTADO[st]}
         }));
         painel.add(Box.createVerticalStrut(14));
 
+        // ALTERADO: Chamando getNome() do cliente
         String nomeCliente = pd.getCliente() != null ? pd.getCliente().getNome() : "Não informado";
-        painel.add(criarSecao("👤  Cliente", new String[][]{
-            {"Nome",       nomeCliente},
-            {"Endereço",   "Rua das Flores, 55"},
-            {"Pagamento",  "Pago via App"}
+        painel.add(criarSecao("Cliente", new String[][]{
+                {"Nome",       nomeCliente},
+                {"Endereço",   "Rua das Flores, 55"},
+                {"Pagamento",  "Pago via App"}
         }));
         painel.add(Box.createVerticalStrut(24));
 
-        // ─ Botões de ação contextual
         JPanel btnArea = criarBotoesAcao(pd);
         btnArea.setAlignmentX(Component.LEFT_ALIGNMENT);
         painel.add(btnArea);
@@ -346,7 +340,6 @@ public class TelaPedidosRestaurante extends TelaMenu {
         return painel;
     }
 
-    /** Botões diferentes para cada estado do pedido */
     private JPanel criarBotoesAcao(Pedido pd) {
         JPanel area = new JPanel();
         area.setLayout(new BoxLayout(area, BoxLayout.Y_AXIS));
@@ -355,15 +348,14 @@ public class TelaPedidosRestaurante extends TelaMenu {
         int st = safeEstado(pd);
 
         if (st == ESTADO_RECEBIDO) {
-            // Restaurante pode aceitar ou rejeitar o pedido
             JPanel row = new JPanel(new GridLayout(1, 2, 12, 0));
             row.setOpaque(false);
             row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
 
-            BotaoArredondado btnAceitar = new BotaoArredondado("\uD83C\uDF73 Iniciar Produção", 20, COR_AZUL, 13);
+            BotaoArredondado btnAceitar = new BotaoArredondado("Iniciar Produção", 20, COR_AZUL, 13);
             btnAceitar.addActionListener(e -> mudarEstado(pd, ESTADO_PRODUCAO));
 
-            BotaoArredondado btnRecusar = new BotaoArredondado("✗  Recusar Pedido", 20, COR_PRIMARIA, 13);
+            BotaoArredondado btnRecusar = new BotaoArredondado("Recusar Pedido", 20, COR_PRIMARIA, 13);
             btnRecusar.addActionListener(e -> recusarPedido(pd));
 
             row.add(btnAceitar);
@@ -371,41 +363,33 @@ public class TelaPedidosRestaurante extends TelaMenu {
             area.add(row);
 
         } else if (st == ESTADO_PRODUCAO) {
-            // Sinaliza que o prato ficou pronto
-            BotaoArredondado btnPronto = new BotaoArredondado("✅  Marcar como Pronto", 20, COR_VERDE, 14);
+            BotaoArredondado btnPronto = new BotaoArredondado("Marcar como Pronto", 20, COR_VERDE, 14);
             btnPronto.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
             btnPronto.addActionListener(e -> mudarEstado(pd, ESTADO_PRONTO));
             area.add(btnPronto);
 
         } else if (st == ESTADO_PRONTO) {
-            // Aguardando entregador — apenas informativo
-            JLabel info = new JLabel("⏳  Aguardando entregador retirar o pedido...");
+            JLabel info = new JLabel("Aguardando entregador aceitar o pedido...");
             info.setFont(new Font("Arial", Font.ITALIC, 13));
             info.setForeground(new Color(100, 100, 100));
-            info.setAlignmentX(Component.LEFT_ALIGNMENT);
             area.add(info);
-            area.add(Box.createVerticalStrut(12));
 
-            BotaoArredondado btnFinalizar = new BotaoArredondado("📦  Marcar como Entregue", 20, new Color(100, 100, 100), 13);
-            btnFinalizar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
-            btnFinalizar.addActionListener(e -> mudarEstado(pd, ESTADO_FINALIZADO));
-            area.add(btnFinalizar);
+        } else if (st == ESTADO_EM_ROTA) {
+            JLabel info = new JLabel("Pedido a caminho com o entregador.");
+            info.setFont(new Font("Arial", Font.ITALIC, 13));
+            info.setForeground(new Color(100, 100, 100));
+            area.add(info);
 
         } else {
-            // Finalizado
-            JLabel info = new JLabel("✅  Pedido concluído e entregue ao cliente.");
+            JLabel info = new JLabel("Pedido concluído e entregue ao cliente.");
             info.setFont(new Font("Arial", Font.ITALIC, 13));
             info.setForeground(COR_VERDE);
-            info.setAlignmentX(Component.LEFT_ALIGNMENT);
             area.add(info);
         }
 
         return area;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  HELPER DE SECÃO (idêntico ao padrão do projeto)
-    // ─────────────────────────────────────────────────────────
     private JPanel criarSecao(String titulo, String[][] pares) {
         JPanel s = new JPanel();
         s.setLayout(new BoxLayout(s, BoxLayout.Y_AXIS));
@@ -422,14 +406,12 @@ public class TelaPedidosRestaurante extends TelaMenu {
         Texto lblTit = new Texto(titulo);
         lblTit.setFont(new Font("Arial", Font.BOLD, 13));
         lblTit.setForeground(COR_PRIMARIA);
-        lblTit.setAlignmentX(Component.LEFT_ALIGNMENT);
         s.add(lblTit);
         s.add(Box.createVerticalStrut(8));
 
         for (String[] par : pares) {
             JPanel linha = new JPanel(new BorderLayout(8, 0));
             linha.setOpaque(false);
-            linha.setAlignmentX(Component.LEFT_ALIGNMENT);
             JLabel chave = new JLabel(par[0] + ":");
             chave.setFont(new Font("Arial", Font.BOLD, 13));
             chave.setForeground(new Color(80, 80, 80));
@@ -445,69 +427,60 @@ public class TelaPedidosRestaurante extends TelaMenu {
         return s;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  LÓGICA
-    // ─────────────────────────────────────────────────────────
     private void selecionarPedido(Pedido pd) {
         pedidoSelecionado = pd;
         corpoPrincipal.remove(painelDetalhe);
         painelDetalhe = criarPainelDetalhe(pd);
+        RemoveEmoji.aplicar(painelDetalhe);
         corpoPrincipal.add(painelDetalhe);
         corpoPrincipal.revalidate();
         corpoPrincipal.repaint();
     }
 
+    // ─────────────────────────────────────────────────────────
+    //  LÓGICA ALTERADA PARA INTERAGIR COM O BANCO DE DADOS (bd)
+    // ─────────────────────────────────────────────────────────
     private void mudarEstado(Pedido pd, int novoEstado) {
-        pd.setEstadoRestaurante(novoEstado);
-        String[] msgs = {
-            "", "Pedido recebido.", "Produção iniciada!",
-            "Prato pronto! Aguardando entregador.", "Pedido finalizado."
-        };
-        JOptionPane.showMessageDialog(
-            SwingUtilities.getWindowAncestor(this),
-            msgs[novoEstado], "Status Atualizado", JOptionPane.INFORMATION_MESSAGE
-        );
-        sist.configuraTela(new TelaPedidosRestaurante(sist));
-    }
+        // ALTERADO: Atualiza o status do pedido de forma persistente no banco de dados, pelo ID do pedido
+        boolean sucesso = bd.BancoDados.atualizarEstadoPedido(pd.getId(), novoEstado);
 
-    private void recusarPedido(Pedido pd) {
-        int r = JOptionPane.showConfirmDialog(
-            SwingUtilities.getWindowAncestor(this),
-            "Tem certeza que deseja recusar este pedido?\nO cliente será notificado.",
-            "Recusar Pedido", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE
-        );
-        if (r == JOptionPane.YES_OPTION) {
-            Dados.listaPedidos.remove(pd);
-            sist.configuraTela(new TelaPedidosRestaurante(sist));
+        if (sucesso) {
+            String[] msgs = {
+                    "", "Pedido recebido.", "Produção iniciada!",
+                    "Prato pronto! Aguardando entregador.", "Pedido a caminho.", "Pedido finalizado."
+            };
+            JOptionPane.showMessageDialog(this, msgs[novoEstado], "Status Atualizado", JOptionPane.INFORMATION_MESSAGE);
+            atualizarTela();
+        } else {
+            JOptionPane.showMessageDialog(this, "Erro ao atualizar status no servidor.", "Erro", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    /** Lê o estadoRestaurante com fallback seguro */
-    private int safeEstado(Pedido pd) {
-        int e = pd.getEstadoRestaurante();
-        return Math.max(1, Math.min(e, 4));
+    private void recusarPedido(Pedido pd) {
+        int r = JOptionPane.showConfirmDialog(this,
+                "Tem certeza que deseja recusar este pedido?\nO cliente será notificado.",
+                "Recusar Pedido", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
+        if (r == JOptionPane.YES_OPTION) {
+            // ALTERADO: Remove o pedido do banco pelo seu ID
+            boolean sucesso = bd.BancoDados.cancelarPedidoNoBanco(pd.getId());
+            if (sucesso) {
+                atualizarTela();
+            } else {
+                JOptionPane.showMessageDialog(this, "Erro ao processar recusa no banco.", "Erro", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  DADOS DEMO
-    // ─────────────────────────────────────────────────────────
-    private List<Pedido> criarPedidosDemo() {
-        Restaurante rest = new Restaurante(1,"aa","",1);
-        Produto pr1 = new Produto(); pr1.setNome("X-Burguer Duplo");
-        Produto pr2 = new Produto(); pr2.setNome("Pizza Margherita");
-        Produto pr3 = new Produto(); pr3.setNome("Frango Grelhado");
-        Produto pr4 = new Produto(); pr4.setNome("Combo Família");
+    private int safeEstado(Pedido pd) {
+        int e = pd.getEstado(); // Coleta o estado numérico padrão unificado
+        return Math.max(1, Math.min(e, 5));
+    }
 
-        Cliente cl1 = new Cliente("c1@mail.com", "João Silva",   "");
-        Cliente cl2 = new Cliente("c2@mail.com", "Maria Souza",  "");
-        Cliente cl3 = new Cliente("c3@mail.com", "Pedro Lima",   "");
-        Cliente cl4 = new Cliente("c4@mail.com", "Ana Ferreira", "");
-
-        Pedido p1 = new Pedido(pr1, "19:30", null, null, rest, cl1); p1.setEstadoRestaurante(ESTADO_RECEBIDO);
-        Pedido p2 = new Pedido(pr2, "19:45", null, null, rest, cl2); p2.setEstadoRestaurante(ESTADO_PRODUCAO);
-        Pedido p3 = new Pedido(pr3, "20:10", null, null, rest, cl3); p3.setEstadoRestaurante(ESTADO_PRONTO);
-        Pedido p4 = new Pedido(pr4, "18:50", null, null, rest, cl4); p4.setEstadoRestaurante(ESTADO_FINALIZADO);
-
-        return java.util.Arrays.asList(p1, p2, p3, p4);
+    private void atualizarTela() {
+        pedidoSelecionado = null;
+        if (sist != null) {
+            sist.configuraTela(new TelaPedidosRestaurante(sist));
+        }
     }
 }

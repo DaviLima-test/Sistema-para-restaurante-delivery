@@ -1,6 +1,7 @@
 package view;
 
 import model.Login;
+import util.RemoveEmoji;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -43,6 +44,7 @@ public class Telabase extends JFrame {
 
         getContentPane().removeAll();
         getContentPane().add(panel, BorderLayout.CENTER);
+        RemoveEmoji.aplicar(panel); // remove emojis de botoes e labels se o SO for Windows
         revalidate();
         repaint();
 

@@ -1,5 +1,7 @@
 package view;
 
+import util.RemoveEmoji;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
@@ -232,7 +234,7 @@ public class TelaPrincipal extends TelaMenu {
             CardRestaurante cdr = new CardRestaurante(
                     prat.getNome(),
                     String.format("R$ %.2f", prat.getPreco()),
-                    prat.getRestaurante(),
+                    prat.getRestaurante().getNome(),
                     "🍽️"
             );
 
@@ -243,7 +245,7 @@ public class TelaPrincipal extends TelaMenu {
 
                     JOptionPane.showMessageDialog(
                             null,
-                            "🛒 " + prat.getNome() + " adicionado ao carrinho!",
+                            RemoveEmoji.texto("🛒 " + prat.getNome() + " adicionado ao carrinho!"),
                             "Sucesso",
                             JOptionPane.INFORMATION_MESSAGE
                     );

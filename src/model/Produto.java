@@ -6,9 +6,9 @@ public class Produto {
     private String nome;
     private String descricao;
     private double preco;
-    private String restaurante;
+    private Restaurante restaurante;
 
-    public Produto(int codigo, String nome ,double preco, String restaurante){
+    public Produto(int codigo, String nome ,double preco, Restaurante restaurante){
         this.codigo = codigo;
         this.nome = nome;
         this.preco = preco;
@@ -35,6 +35,13 @@ public class Produto {
     }
 
     public Produto() {
+
+    }
+
+    public Produto(int codigo, String nomePrato, double preco, String restaurante) {
+        this.codigo = codigo;
+        this.nome = nomePrato;
+        this.preco = preco;
 
     }
 
@@ -71,7 +78,7 @@ public class Produto {
         this.preco = preco;
     }
 
-    public String getRestaurante(){return  this.restaurante;}
+    public Restaurante getRestaurante(){return  this.restaurante;}
     @Override
     public String toString() {
         return nome;

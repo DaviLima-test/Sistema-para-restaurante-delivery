@@ -1,16 +1,21 @@
 package model;
 
-public class Cliente  {
+public class Cliente {
     private String Cartao;
     private int Estrelas;
     private String email;
     private String nome;
 
     public Cliente(String email, String user, String cartao) {
-        this.nome = nome;
+
+        this.nome = user;
         this.email = email;
         this.Cartao = cartao;
         this.Estrelas = 5; // Padrão inicial
+    }
+
+    public Cliente() {
+
     }
 
     public String getNome() { return this.nome; }
@@ -42,4 +47,6 @@ public class Cliente  {
     public void CancelarPedido(Pedido pedido) {
         // Lógica simplificada
     }
+
+    public String getEmail() {return email;  }
 }
