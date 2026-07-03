@@ -1,6 +1,7 @@
 package view;
 
 import bd.BancoDados;
+import model.Admin;
 import model.Login;
 
 import javax.swing.*;
@@ -8,26 +9,53 @@ import java.awt.*;
 import java.util.List;
 
 /**
- * Tela "Moderação" do painel administrativo.
- * Cada aba lista um tipo de usuário (Clientes, Restaurantes, Entregadores)
- * com ações de moderação. A aba "Admins" só é visível para o admin master
- * (predefinido pelo sistema) e permite criar/rebaixar administradores.
+ * Interface gráfica de Moderação e Auditoria de Contas pertencente ao painel do administrador.
+ * <p>
+ * Apresenta uma disposição baseada em abas dinâmicas divididas por categorias operacionais
+ * (Clientes, Restaurantes, Entregadores, e opcionalmente Administradores). Fornece ferramentas
+ * em tempo real para visualização de dados cadastrais, aplicação/remoção de sanções de banimento,
+ * além de permitir a promoção e rebaixamento de usuários controlados pela instância {@link Admin}.
+ * </p>
+ * * @author Arthur, Felipe, Davi
+ * @version 1.2
  */
 public class TelaAdminModeracao extends TelaMenu {
 
+    /** Cor vermelha padrão associada a ações de restrição e banimento de contas. */
     private static final Color COR_PRIMARIA   = new Color(234, 16, 34);
+
+    /** Cor verde associada a operações seguras, criação de registros e liberação (desbanir). */
     private static final Color COR_VERDE      = new Color(46, 174, 82);
+
+    /** Cor amarela comemorativa aplicada estritamente no destaque visual do Admin Master. */
     private static final Color COR_AMARELO    = new Color(255, 180, 0);
+
+    /** Cor cinza neutra clara para estilização de fundos secundários. */
     private static final Color COR_CINZA_BG   = new Color(245, 245, 245);
+
+    /** Cor sutil para pintura de linhas limítrofes (divisores). */
     private static final Color COR_BORDA      = new Color(230, 230, 230);
 
+    /** Frame controlador centralizador de navegação {@link Telabase}. */
     private final Telabase sist;
+
+    /** Flag condicional que valida se as permissões ativas pertencem ao administrador master nativo. */
     private final boolean souAdminMaster;
 
+    /** Objeto operacional de domínio que unifica os métodos de negócios em back-end para moderação. */
+    private final Admin adminOperador;
+
+    /**
+     * Construtor padrão para montagem estrutural da tela de moderação de usuários.
+     * Mapeia os níveis de acesso e inicializa as abas parametrizadas de acordo com as permissões do perfil.
+     *
+     * @param sist O frame base de gerenciamento global de telas {@link Telabase}.
+     */
     public TelaAdminModeracao(Telabase sist) {
         super(sist);
         this.sist = sist;
         this.souAdminMaster = "admin_master".equals(Login.GetTipo());
+        this.adminOperador = new Admin(Login.GetEmail(), "", Login.GetUser());
 
         JPanel container = new JPanel(new BorderLayout());
         container.setBackground(Color.WHITE);
@@ -51,6 +79,10 @@ public class TelaAdminModeracao extends TelaMenu {
         setConteudoInterno(container);
     }
 
+    /**
+     * Cria e estiliza o componente textual do cabeçalho da área de moderação.
+     * @return Um {@link JPanel} configurado com títulos descritivos.
+     */
     private JPanel criarCabecalho() {
         JPanel p = new JPanel(new BorderLayout());
         p.setBackground(Color.WHITE);
@@ -78,9 +110,13 @@ public class TelaAdminModeracao extends TelaMenu {
         return p;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  ABA (uma coluna do rascunho: Clientes / Rest. / Entr. / Admins)
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Constrói dinamicamente a estrutura interna de rolagem de uma aba com base na categoria informada.
+     *
+     * @param tipo         A string literal de filtro do usuário (Ex: 'cliente').
+     * @param isAbaAdmins  Flag indicando se o escopo de construção pertence à listagem restrita de administradores.
+     * @return Um {@link JPanel} estruturado com barras de rolagem prontas.
+     */
     private JPanel construirAba(String tipo, boolean isAbaAdmins) {
         JPanel abaRaiz = new JPanel(new BorderLayout());
         abaRaiz.setBackground(Color.WHITE);
@@ -100,7 +136,6 @@ public class TelaAdminModeracao extends TelaMenu {
             lista.add(topo);
             lista.add(Box.createVerticalStrut(14));
 
-            // Admin master aparece fixo no topo, não pode ser banido/rebaixado por ninguém
             lista.add(criarCardAdminMaster());
             lista.add(Box.createVerticalStrut(10));
         }
@@ -116,8 +151,16 @@ public class TelaAdminModeracao extends TelaMenu {
         return abaRaiz;
     }
 
+    /**
+     * Interage com o objeto {@link Admin} para ler a listagem do banco e injetar
+     * os cards gráficos correspondentes na janela do painel.
+     *
+     * @param lista       O container interno onde os elementos visuais serão inseridos.
+     * @param tipo        A string descritiva da categoria que serve como filtro para consulta.
+     * @param isAbaAdmins Flag indicativa da natureza de exibição da aba.
+     */
     private void popularLista(JPanel lista, String tipo, boolean isAbaAdmins) {
-        List<BancoDados.UsuarioAdmin> usuarios = BancoDados.listarUsuariosPorTipo(tipo);
+        List<BancoDados.UsuarioAdmin> usuarios = adminOperador.listarUsuariosParaModeracao(tipo);
 
         if (usuarios.isEmpty()) {
             JLabel vazio = new JLabel("Nenhum usuário deste tipo cadastrado.");
@@ -134,7 +177,14 @@ public class TelaAdminModeracao extends TelaMenu {
         }
     }
 
-    /** Recarrega o conteúdo da lista (usado após banir/promover/rebaixar). */
+    /**
+     * Executa a limpeza estrutural e solicita uma nova varredura de dados ao back-end.
+     * Invocado de forma reativa para atualizar a tela após ações de banimento ou promoções de perfil.
+     *
+     * @param lista       O container gerenciador de layouts a ser reconstruído.
+     * @param tipo        A categoria alvo da recarga.
+     * @param isAbaAdmins Flag definindo o escopo das abas de administração.
+     */
     private void recarregar(JPanel lista, String tipo, boolean isAbaAdmins) {
         lista.removeAll();
         if (isAbaAdmins) {
@@ -153,9 +203,10 @@ public class TelaAdminModeracao extends TelaMenu {
         lista.repaint();
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  CARDS
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Fabrica um card gráfico estático e imutável para representação do Admin Master no topo da aba.
+     * @return Um {@link JPanel} contendo o layout formatado com insígnias douradas.
+     */
     private JPanel criarCardAdminMaster() {
         JPanel card = new JPanel(new BorderLayout(10, 0));
         card.setBackground(new Color(255, 249, 230));
@@ -182,6 +233,16 @@ public class TelaAdminModeracao extends TelaMenu {
         return card;
     }
 
+    /**
+     * Constrói e anexa os componentes internos de um card de usuário individual.
+     * Mapeia de forma autônoma os eventos das ações do botão "Banir/Desbanir", "Promover" e "Rebaixar"
+     * redirecionando-as para a classe de back-end {@link Admin}.
+     *
+     * @param u           O modelo representativo contendo os dados brutos recuperados do usuário.
+     * @param isAbaAdmins Flag controladora de contexto para exibição de botões de cargos.
+     * @param listaPai    Referência ao painel pai para invocação das rotinas de atualização após mutações.
+     * @return Um {@link JPanel} completamente estruturado e operante.
+     */
     private JPanel criarCardUsuario(BancoDados.UsuarioAdmin u, boolean isAbaAdmins, JPanel listaPai) {
         JPanel card = new JPanel(new BorderLayout(10, 0));
         card.setBackground(Color.WHITE);
@@ -191,7 +252,6 @@ public class TelaAdminModeracao extends TelaMenu {
                 BorderFactory.createEmptyBorder(10, 14, 10, 14)
         ));
 
-        // Coluna de informações
         JPanel infos = new JPanel();
         infos.setOpaque(false);
         infos.setLayout(new BoxLayout(infos, BoxLayout.Y_AXIS));
@@ -208,7 +268,6 @@ public class TelaAdminModeracao extends TelaMenu {
 
         card.add(infos, BorderLayout.CENTER);
 
-        // Coluna de ações — as mesmas ações se repetem em todas as abas ("||" no rascunho)
         JPanel acoes = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         acoes.setOpaque(false);
 
@@ -239,7 +298,7 @@ public class TelaAdminModeracao extends TelaMenu {
                     "Tem certeza que deseja " + acao + " a conta de " + u.nome + "?",
                     "Confirmar", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
             if (r == JOptionPane.YES_OPTION) {
-                if (BancoDados.definirBanimento(u.id, novoBanido)) {
+                if (adminOperador.definirBanimentoConta(u.id, novoBanido)) {
                     recarregar(listaPai, u.tipo, isAbaAdmins);
                 } else {
                     JOptionPane.showMessageDialog(this, "Não foi possível atualizar o usuário.", "Erro", JOptionPane.ERROR_MESSAGE);
@@ -256,7 +315,7 @@ public class TelaAdminModeracao extends TelaMenu {
                             "Remover privilégios de admin de " + u.nome + "?\nA conta voltará a ser um cliente comum.",
                             "Rebaixar admin", JOptionPane.YES_NO_OPTION);
                     if (r == JOptionPane.YES_OPTION) {
-                        if (BancoDados.rebaixarAdmin(u.id, "cliente")) {
+                        if (adminOperador.rebaixarAdministrador(u.id)) {
                             recarregar(listaPai, "admin", true);
                         } else {
                             JOptionPane.showMessageDialog(this, "Não foi possível rebaixar este usuário.", "Erro", JOptionPane.ERROR_MESSAGE);
@@ -271,7 +330,7 @@ public class TelaAdminModeracao extends TelaMenu {
                             "Tornar " + u.nome + " um administrador padrão?",
                             "Promover a Admin", JOptionPane.YES_NO_OPTION);
                     if (r == JOptionPane.YES_OPTION) {
-                        if (BancoDados.promoverParaAdmin(u.id)) {
+                        if (adminOperador.promoverUsuarioParaAdmin(u.id)) {
                             recarregar(listaPai, u.tipo, isAbaAdmins);
                             JOptionPane.showMessageDialog(this, u.nome + " agora é um admin.");
                         } else {
@@ -287,6 +346,12 @@ public class TelaAdminModeracao extends TelaMenu {
         return card;
     }
 
+    /**
+     * Helper padronizador para renderização uniforme dos pequenos botões retangulares de ações.
+     *
+     * @param texto A String literal que será fixada no corpo de clique do botão.
+     * @return Um componente operacional do tipo {@link JButton}.
+     */
     private JButton criarBotaoAcao(String texto) {
         JButton btn = new JButton(texto);
         btn.setFont(new Font("Arial", Font.PLAIN, 11));
@@ -295,9 +360,13 @@ public class TelaAdminModeracao extends TelaMenu {
         return btn;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  CRIAR NOVO ADMIN (só admin master)
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Invoca e constrói de forma flutuante uma caixa modal parametrizada com caixas de preenchimento.
+     * Utilizado exclusivamente por administradores master para gerar credenciais síncronas de novos administradores
+     * por meio do método `criarNovoAdministrador`.
+     *
+     * @param lista O container de listagem visível associado para acionamento de repinturas automáticas.
+     */
     private void abrirFormularioNovoAdmin(JPanel lista) {
         JTextField campoNome = new JTextField();
         JTextField campoEmail = new JTextField();
@@ -324,7 +393,7 @@ public class TelaAdminModeracao extends TelaMenu {
                 return;
             }
 
-            if (BancoDados.criarNovoAdmin(nome, email, senha)) {
+            if (adminOperador.criarNovoAdministrador(nome, email, senha)) {
                 recarregar(lista, "admin", true);
                 JOptionPane.showMessageDialog(this, "Admin criado com sucesso!");
             } else {

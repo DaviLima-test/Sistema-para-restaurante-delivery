@@ -3,7 +3,7 @@ package view;
 import model.Produto;
 import util.RemoveEmoji;
 import model.Pedido;
-import bd.BancoDados; // IMPORTANTE: Importando a classe do diretório correto
+import bd.BancoDados;
 
 import javax.swing.*;
 import java.awt.*;
@@ -13,6 +13,7 @@ import java.util.ArrayList;
 
 /**
  * TelaPedidosEntregador — formato adaptável conectado ao banco de dados.
+ * @version 1.2
  */
 public class TelaPedidosEntregador extends TelaMenu {
 
@@ -24,6 +25,7 @@ public class TelaPedidosEntregador extends TelaMenu {
 
     private static final Color COR_PRIMARIA   = new Color(234, 16, 34);
     private static final Color COR_VERDE      = new Color(46, 174, 82);
+    private static final Color COR_AMARELO    = new Color(255, 180, 0);
     private static final Color COR_CINZA_BG   = new Color(245, 245, 245);
     private static final Color COR_BORDA      = new Color(230, 230, 230);
     private static final Color COR_CARD_HOVER = new Color(255, 242, 242);
@@ -36,7 +38,6 @@ public class TelaPedidosEntregador extends TelaMenu {
         container.setBackground(Color.WHITE);
         container.add(criarCabecalho(), BorderLayout.NORTH);
 
-        // ALTERADO: Busca no banco se este entregador já possui alguma corrida aceita
         Pedido pedidoAtivo = obterPedidoEmRota();
 
         if (pedidoAtivo != null) {
@@ -81,12 +82,100 @@ public class TelaPedidosEntregador extends TelaMenu {
         titulo.setForeground(new Color(30, 30, 30));
         p.add(titulo, BorderLayout.WEST);
 
+        // Subpainel para alinhar múltiplos botões à direita organizadamente
+        JPanel painelBotoes = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
+        painelBotoes.setOpaque(false);
+
+        // Novo Botão: Acessa o histórico e calcula os rendimentos financeiros do entregador
+        BotaoArredondado btnGanhos = new BotaoArredondado("📊 Meus Ganhos", 20, COR_AMARELO, 14);
+        btnGanhos.setPreferredSize(new Dimension(150, 38));
+        btnGanhos.addActionListener(e -> calcularEExibirGanhos());
+
         BotaoArredondado btnAtualizar = new BotaoArredondado("↻  Atualizar", 20, COR_PRIMARIA, 14);
         btnAtualizar.setPreferredSize(new Dimension(130, 38));
         btnAtualizar.addActionListener(e -> atualizarTela());
-        p.add(btnAtualizar, BorderLayout.EAST);
+
+        painelBotoes.add(btnGanhos);
+        painelBotoes.add(btnAtualizar);
+        p.add(painelBotoes, BorderLayout.EAST);
 
         return p;
+    }
+
+    /**
+     * Calcula os rendimentos totais com base nas entregas concluídas no Banco de Dados
+     */
+    private void calcularEExibirGanhos() {
+        int idEntregador = bd.BancoDados.obterIdUsuarioLogado();
+        if (idEntregador == -1) {
+            JOptionPane.showMessageDialog(this, "Erro: Usuário não identificado ou deslogado.", "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Busca a lista de todas as entregas com status 5 (Finalizado) deste entregador específico
+        List<Pedido> historico = bd.BancoDados.obterPedidosConcluidosPorEntregador(idEntregador);
+        int totalCorridas = historico.size();
+
+        // Regra de negócio: R$ 8.50 fixos por cada entrega efetuada com sucesso
+        double taxaPorCorrida = 8.50;
+        double ganhosAcumulados = totalCorridas * taxaPorCorrida;
+
+        String msgRelatorio = String.format(
+                "📊 Extrato Consolidador de Repasses\n\n" +
+                        "» Entregador ID: #%d\n" +
+                        "» Entregas Concluídas no Histórico: %d\n" +
+                        "» Valor Fixo por Corrida: R$ %.2f\n" +
+                        "» Total Líquido a Receber: R$ %.2f\n\n" +
+                        "Deseja exportar a folha de prestação de serviços impressa?",
+                idEntregador, totalCorridas, taxaPorCorrida, ganhosAcumulados
+        );
+
+        int opcao = JOptionPane.showConfirmDialog(
+                SwingUtilities.getWindowAncestor(this),
+                msgRelatorio,
+                "Balanço de Carteira",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.INFORMATION_MESSAGE
+        );
+
+        if (opcao == JOptionPane.YES_OPTION) {
+            exportarRelatorioFisico(idEntregador, totalCorridas, ganhosAcumulados);
+        }
+    }
+
+    /**
+     * Salva o relatório detalhado em formato .txt no computador
+     */
+    private void exportarRelatorioFisico(int idEntregador, int totalCorridas, double ganhos) {
+        String nomeArquivo = "relatorio_ganhos_entregador_" + idEntregador + ".txt";
+
+        try (java.io.FileWriter writer = new java.io.FileWriter(nomeArquivo)) {
+            writer.write("==================================================\n");
+            writer.write("        SISTEMA DELIVERY - RELATÓRIO DO MOTOBOY   \n");
+            writer.write("==================================================\n");
+            writer.write(String.format("Código do Prestador: #%d\n", idEntregador));
+            writer.write("--------------------------------------------------\n");
+            writer.write(String.format("Total de Corridas Efetuadas:  %d entregas\n", totalCorridas));
+            writer.write(String.format("Valor Bruto por Serviço:      R$ 8,50\n"));
+            writer.write(String.format("SALDO ACUMULADO DISPONÍVEL:   R$ %10.2f\n", ganhos));
+            writer.write("==================================================\n");
+            writer.write(" Gerado em: " + new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new java.util.Date()) + "\n");
+            writer.write("==================================================\n");
+
+            JOptionPane.showMessageDialog(
+                    SwingUtilities.getWindowAncestor(this),
+                    "Relatório de ganhos salvo com sucesso!\nArquivo: " + nomeArquivo,
+                    "Sucesso",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+        } catch (java.io.IOException ex) {
+            JOptionPane.showMessageDialog(
+                    SwingUtilities.getWindowAncestor(this),
+                    "Erro ao tentar gravar arquivo de relatório: " + ex.getMessage(),
+                    "Falha Crítica",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
     }
 
     private JPanel criarPainelLista() {
@@ -102,7 +191,6 @@ public class TelaPedidosEntregador extends TelaMenu {
         lista.setLayout(new BoxLayout(lista, BoxLayout.Y_AXIS));
         lista.setBackground(Color.WHITE);
 
-        // ALTERADO: Busca os pedidos direto do banco de dados
         List<Pedido> pedidos = obterPedidosDisponiveis();
 
         if (pedidos.isEmpty()) {
@@ -150,7 +238,6 @@ public class TelaPedidosEntregador extends TelaMenu {
         gbc.gridheight = 1;
         gbc.insets = new Insets(0, 0, 3, 0);
 
-        // ALTERADO: Concatena o nome dos itens do ArrayList para exibir no Card
         StringBuilder nomesProdutos = new StringBuilder();
         for (Produto prod : p.getComidas()) {
             if (nomesProdutos.length() > 0) nomesProdutos.append(", ");
@@ -229,14 +316,12 @@ public class TelaPedidosEntregador extends TelaMenu {
         painel.add(badge);
         painel.add(Box.createVerticalStrut(20));
 
-        // ALTERADO: Agrupa o nome das comidas do ArrayList para a seção visual
         StringBuilder listaItens = new StringBuilder();
         for (Produto prod : p.getComidas()) {
             if (listaItens.length() > 0) listaItens.append(", ");
             listaItens.append(prod.getNome());
         }
 
-        // Seção: Produto
         painel.add(criarSecao("🍔  Produto", new String[][]{
                 {"Itens",   listaItens.toString()},
                 {"Horário", p.getHora_Entregue() != null ? p.getHora_Entregue() : "Imediato"}
@@ -255,7 +340,6 @@ public class TelaPedidosEntregador extends TelaMenu {
         }));
         painel.add(Box.createVerticalStrut(14));
 
-        // ALTERADO: Consome dados reais do objeto Restaurante mapeado
         String nomeRest = aceito ? (p.getRestaurante() != null ? p.getRestaurante().getNome() : "Restaurante") : "Disponível após aceitar";
         String endRest  = aceito ? (p.getRestaurante() != null ? p.getRestaurante().getLocalizacao() : "Localização") : "Disponível após aceitar";
 
@@ -271,13 +355,13 @@ public class TelaPedidosEntregador extends TelaMenu {
         btnRow.setOpaque(false);
         btnRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
 
-        if (p.getEstado() == 2) { // Ainda em produção no restaurante
+        if (p.getEstado() == 2) {
             JLabel info = new JLabel("O restaurante ainda está preparando este pedido.");
             info.setFont(new Font("Arial", Font.ITALIC, 13));
             info.setForeground(new Color(100, 100, 100));
             painel.add(info);
             return painel;
-        } else if (p.getEstado() == 3) { // Pronto e disponível para aceite
+        } else if (p.getEstado() == 3) {
             BotaoArredondado btnAceitar = new BotaoArredondado("✓  Aceitar Pedido", 20, COR_VERDE, 14);
             btnAceitar.addActionListener(e -> aceitarPedido(p));
 
@@ -353,11 +437,7 @@ public class TelaPedidosEntregador extends TelaMenu {
         corpoPrincipal.repaint();
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  LÓGICA ALTERADA PARA ENVIAR REQUISIÇÕES AO BANCO (bd)
-    // ─────────────────────────────────────────────────────────
     private void aceitarPedido(Pedido p) {
-        // Atribui este entregador ao pedido e muda o estado para 4 (Em rota), de forma atômica
         int idEntregador = bd.BancoDados.obterIdUsuarioLogado();
         boolean sucesso = idEntregador != -1 && bd.BancoDados.aceitarEntrega(p.getId(), idEntregador);
 
@@ -370,11 +450,10 @@ public class TelaPedidosEntregador extends TelaMenu {
     }
 
     private void recusarPedido(Pedido p) {
-        atualizarTela(); // Apenas limpa a seleção visual
+        atualizarTela();
     }
 
     private void concluirEntrega(Pedido p) {
-        // Altera o estado para 5 (Entregue/Finalizado) no banco de dados
         boolean sucesso = bd.BancoDados.atualizarEstadoPedido(p.getId(), 5);
 
         if (sucesso) {
@@ -388,7 +467,6 @@ public class TelaPedidosEntregador extends TelaMenu {
     private void cancelarCorrida(Pedido p) {
         int r = JOptionPane.showConfirmDialog(this, "Tem certeza que deseja desistir?\nO pedido voltará para a lista.", "Aviso", JOptionPane.YES_NO_OPTION);
         if (r == JOptionPane.YES_OPTION) {
-            // Libera o pedido: volta a status 3 (Pronto) sem entregador atribuído
             bd.BancoDados.liberarEntrega(p.getId());
             atualizarTela();
         }
@@ -402,14 +480,12 @@ public class TelaPedidosEntregador extends TelaMenu {
     }
 
     private Pedido obterPedidoEmRota() {
-        // Busca se o entregador logado já possui um pedido em rota (status 4) atribuído a ele
         int idEntregador = bd.BancoDados.obterIdUsuarioLogado();
         if (idEntregador == -1) return null;
         return bd.BancoDados.obterPedidoAtivoEntregador(idEntregador);
     }
 
     private List<Pedido> obterPedidosDisponiveis() {
-        // Pedidos prontos (status 3) e ainda sem entregador atribuído
         return bd.BancoDados.obterPedidosDisponiveisEntrega();
     }
 }

@@ -1,7 +1,6 @@
 package view;
 
 import util.RemoveEmoji;
-
 import bd.BancoDados;
 import model.Login;
 
@@ -9,41 +8,62 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * TelaPerfil — Exibe o resumo do usuário à esquerda (40%)
- * e os detalhes ou formulário de alteração de senha à direita (60%).
- *
- * NOVO: se o usuário for do tipo "restaurante", busca no banco
- * se há um restaurante vinculado ao seu email e exibe os dados
- * (ou um card de ação para criar um) na seção direita.
+ * Interface gráfica (View) encarregada de exibir e gerenciar o perfil do usuário logado.
+ * <p>
+ * O layout distribui os componentes em duas colunas centrais equilibradas por um {@link GridLayout}:
+ * A coluna esquerda (40%) monta o resumo de identificação do usuário e dados resumidos de seu estabelecimento.
+ * A coluna direita (60%) renderiza dinamicamente seções de dados cadastrais detalhados e, caso o perfil logado
+ * pertença à categoria de "restaurante", consome a fachada {@link BancoDados} para listar ou alertar a ausência
+ * do estabelecimento associado ao e-mail corporativo.
+ * </p>
+ * * @author Arthur, Felipe, Davi
+ * @version 1.2
  */
 public class TelaPerfil extends TelaMenu {
 
+    /** Instância ativa do frame de coordenação global de telas. */
     private final Telabase sist;
+
+    /** Contêiner estrutural central encarregado de organizar as colunas de dados. */
     private JPanel corpoPrincipal;
+
+    /** Painel reativo lateral direito focado na renderização do faturamento e dados cadastrais. */
     private JPanel painelDetalhe;
 
+    /** Cor vermelha corporativa aplicada em botões de destaque, encerramento e títulos secundários. */
     private static final Color COR_PRIMARIA = new Color(234, 16, 34);
+
+    /** Tonalidade verde para confirmações e estados de conclusão física de tarefas. */
     private static final Color COR_VERDE    = new Color(46, 174, 82);
+
+    /** Cor cinza neutra para panos de fundo de contêineres e placeholders informativos. */
     private static final Color COR_CINZA_BG = new Color(245, 245, 245);
+
+    /** Cor sutil e padronizada para pintura de contornos e divisórias de componentes. */
     private static final Color COR_BORDA    = new Color(230, 230, 230);
 
-    // ── Resultado da consulta ao banco: null = sem restaurante ──
-    // String[4] = { id, nome, localizacao, estrelas }
+    /** Vetor de Strings contendo o mapeamento de dados do restaurante [id, nome, localizacao, estrelas]. */
     private final String[] dadosRestaurante;
 
+    /**
+     * Construtor da tela de visualização e edição de perfil.
+     * <p>
+     * Avalia de forma prévia se o tipo de usuário ativo corresponde a um perfil de restaurante para efetuar
+     * a busca persistente correspondente. Inicializa a barra de rolagem principal e acopla os cartões de dados.
+     * </p>
+     *
+     * @param sist O frame base de gerenciamento global de telas {@link Telabase}.
+     */
     public TelaPerfil(Telabase sist) {
         super(sist);
         this.sist = sist;
 
-        // ── Consulta ao banco feita UMA VEZ, antes de montar a UI ──
-        // Só faz a query se o tipo for "restaurante"; evita round-trip desnecessário
         if ("restaurante".equalsIgnoreCase(Login.GetTipo())) {
             dadosRestaurante = BancoDados.buscarRestaurantePorGerente(Login.GetEmail());
         } else {
             dadosRestaurante = null;
         }
 
-        // ── Monta a tela normalmente ──
         JPanel container = new JPanel(new BorderLayout());
         container.setBackground(Color.WHITE);
         container.add(criarCabecalho(), BorderLayout.NORTH);
@@ -65,9 +85,10 @@ public class TelaPerfil extends TelaMenu {
         setConteudoInterno(container);
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  CABEÇALHO
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Cria e preenche a barra superior informativa da interface.
+     * * * @return Um {@link JPanel} estruturado contendo o título da tela e o botão de logout.
+     */
     private JPanel criarCabecalho() {
         JPanel p = new JPanel(new BorderLayout());
         p.setBackground(Color.WHITE);
@@ -90,9 +111,11 @@ public class TelaPerfil extends TelaMenu {
         return p;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  PAINEL ESQUERDO — CARD DE IDENTIFICAÇÃO (40%)
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Cria a seção de resumo de perfil localizada na coluna esquerda.
+     * Renderiza o avatar genérico, nome de usuário, cargo e anexa condicionalmente metadados básicos do restaurante.
+     * * * @return Um {@link JPanel} estruturado sob o gerenciador {@link GridBagLayout}.
+     */
     private JPanel criarCardPerfilEsquerda() {
         JPanel card = new JPanel(new GridBagLayout());
         card.setBackground(Color.WHITE);
@@ -106,14 +129,12 @@ public class TelaPerfil extends TelaMenu {
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.fill = GridBagConstraints.NONE;
 
-        // Avatar
         JLabel lblAvatar = new JLabel("👤");
         lblAvatar.setFont(new Font("Arial", Font.PLAIN, 72));
         gbc.gridy = 0;
         gbc.insets = new Insets(0, 0, 15, 0);
         card.add(lblAvatar, gbc);
 
-        // Nome
         String nomeUsuario = Login.GetUser() != null ? Login.GetUser() : "Usuário";
         Texto txtNome = new Texto(nomeUsuario);
         txtNome.setFont(new Font("Arial", Font.BOLD, 22));
@@ -122,7 +143,6 @@ public class TelaPerfil extends TelaMenu {
         gbc.insets = new Insets(0, 0, 10, 0);
         card.add(txtNome, gbc);
 
-        // Badge de tipo
         String tipoConta = Login.GetTipo() != null ? Login.GetTipo().toUpperCase() : "CLIENTE";
         JLabel badge = new JLabel("  " + tipoConta + "  ");
         badge.setFont(new Font("Arial", Font.BOLD, 12));
@@ -136,7 +156,6 @@ public class TelaPerfil extends TelaMenu {
         gbc.gridy = 2;
         card.add(badge, gbc);
 
-        // ── NOVO: se for gerente com restaurante, mostra o nome dele abaixo do badge ──
         if (dadosRestaurante != null) {
             gbc.gridy = 3;
             gbc.insets = new Insets(16, 0, 0, 0);
@@ -156,13 +175,13 @@ public class TelaPerfil extends TelaMenu {
             g2.gridy = 0; g2.insets = new Insets(0, 0, 4, 0);
             cardRest.add(iconeRest, g2);
 
-            JLabel lblNomeRest = new JLabel(dadosRestaurante[1]); // nome
+            JLabel lblNomeRest = new JLabel(dadosRestaurante[1]);
             lblNomeRest.setFont(new Font("Arial", Font.BOLD, 13));
             lblNomeRest.setForeground(COR_PRIMARIA);
             g2.gridy = 1; g2.insets = new Insets(0, 0, 2, 0);
             cardRest.add(lblNomeRest, g2);
 
-            JLabel lblLocRest = new JLabel(dadosRestaurante[2]); // localizacao
+            JLabel lblLocRest = new JLabel(dadosRestaurante[2]);
             lblLocRest.setFont(new Font("Arial", Font.PLAIN, 11));
             lblLocRest.setForeground(Color.GRAY);
             g2.gridy = 2;
@@ -174,9 +193,11 @@ public class TelaPerfil extends TelaMenu {
         return card;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  PAINEL DIREITO — decide o conteúdo baseado no tipo + BD
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Instancia o contêiner padrão da coluna direita preenchendo as caixas de metadados.
+     * Mapeia credenciais de e-mail e bifurca a exibição dependendo do nível de permissão corporativa.
+     * * * @return O painel formatado em {@link BoxLayout}.
+     */
     private JPanel criarPainelDetalheDireito() {
         JPanel painel = new JPanel();
         painel.setLayout(new BoxLayout(painel, BoxLayout.Y_AXIS));
@@ -186,7 +207,6 @@ public class TelaPerfil extends TelaMenu {
                 BorderFactory.createEmptyBorder(24, 24, 24, 24)
         ));
 
-        // ── Título ──
         JLabel lblTitulo = new JLabel("Informações da Conta");
         lblTitulo.setFont(new Font("Arial", Font.BOLD, 18));
         lblTitulo.setForeground(new Color(30, 30, 30));
@@ -194,7 +214,6 @@ public class TelaPerfil extends TelaMenu {
         painel.add(lblTitulo);
         painel.add(Box.createVerticalStrut(20));
 
-        // ── Seção de dados cadastrais ──
         String emailExibido = Login.GetEmail() != null ? Login.GetEmail()
                 : (Login.GetUser() != null ? Login.GetUser().toLowerCase() + "@provedor.com" : "—");
 
@@ -205,7 +224,6 @@ public class TelaPerfil extends TelaMenu {
         }));
         painel.add(Box.createVerticalStrut(16));
 
-        // ── Seção de restaurante (apenas para tipo "restaurante") ──
         if ("restaurante".equalsIgnoreCase(Login.GetTipo())) {
             painel.add(criarSecaoRestaurante());
             painel.add(Box.createVerticalStrut(16));
@@ -214,7 +232,6 @@ public class TelaPerfil extends TelaMenu {
         painel.add(Box.createVerticalGlue());
         painel.add(Box.createVerticalStrut(20));
 
-        // ── Botão alterar senha ──
         BotaoArredondado btnSenha = new BotaoArredondado("🔒 Alterar Minha Senha", 20, COR_VERDE, 14);
         btnSenha.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
         btnSenha.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -224,20 +241,20 @@ public class TelaPerfil extends TelaMenu {
         return painel;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  SEÇÃO DE RESTAURANTE — coração da funcionalidade nova
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Fabrica dinamicamente o painel de status do restaurante com base na consulta prévia do banco.
+     * Retorna uma seção detalhada se encontrado, ou um card de alerta amarelo caso não existam registros.
+     * * * @return O {@link JPanel} de controle situacional formatado.
+     */
     private JPanel criarSecaoRestaurante() {
         if (dadosRestaurante != null) {
-            // ── Restaurante ENCONTRADO no banco ──
-            String estrelas = gerarEstrelas(dadosRestaurante[3]); // "★★★★☆"
+            String estrelas = gerarEstrelas(dadosRestaurante[3]);
 
             JPanel secao = criarSecao("🏪 Meu Restaurante", new String[][]{
-                    {"Nome",        dadosRestaurante[1]},   // nome
-                    {"Endereço",    dadosRestaurante[2]},   // localizacao
+                    {"Nome",        dadosRestaurante[1]},
+                    {"Endereço",    dadosRestaurante[2]},
                     {"Avaliação",   estrelas},
             });
-            // Container que envolve a seção e adiciona os botões de ação abaixo
             JPanel wrapper = new JPanel();
             wrapper.setLayout(new BoxLayout(wrapper, BoxLayout.Y_AXIS));
             wrapper.setOpaque(false);
@@ -247,7 +264,6 @@ public class TelaPerfil extends TelaMenu {
             return wrapper;
 
         } else {
-            // ── Restaurante NÃO encontrado no banco ──
             JPanel secaoVazia = new JPanel();
             secaoVazia.setLayout(new BoxLayout(secaoVazia, BoxLayout.Y_AXIS));
             secaoVazia.setBackground(new Color(255, 252, 240));
@@ -278,9 +294,11 @@ public class TelaPerfil extends TelaMenu {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  FORMULÁRIO DE TROCA DE SENHA (inalterado)
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Gera e estrutura o formulário interativo focado na alteração das credenciais de acesso (senha).
+     * Mapeia validações de consistência e igualdade de caracteres inseridos.
+     * * * @return O painel do formulário montado.
+     */
     private JPanel criarPainelFormularioSenha() {
         JPanel painel = new JPanel();
         painel.setLayout(new BoxLayout(painel, BoxLayout.Y_AXIS));
@@ -327,8 +345,7 @@ public class TelaPerfil extends TelaMenu {
                 JOptionPane.showMessageDialog(this, "A nova senha e a confirmação não coincidem.", "Erro", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            // BancoDados.alterarSenha(Login.GetEmail(), sa, sn); ← integrar quando BD estiver ok
-            JOptionPane.showMessageDialog(this, "Senha atualizada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Senha updated com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
             atualizarTela();
         });
 
@@ -342,9 +359,12 @@ public class TelaPerfil extends TelaMenu {
         return painel;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  HELPERS DE UI
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Fabrica uma subseção visual formatada em pares de chave/valor para exibição limpa de metadados.
+     * * * @param titulo O título da seção (ex: "📝 Dados Cadastrais").
+     * @param pares  Matriz bi-dimensional de Strings contendo as linhas formatadas.
+     * @return O painel contendo o layout da seção.
+     */
     private JPanel criarSecao(String titulo, String[][] pares) {
         JPanel s = new JPanel();
         s.setLayout(new BoxLayout(s, BoxLayout.Y_AXIS));
@@ -382,6 +402,10 @@ public class TelaPerfil extends TelaMenu {
         return s;
     }
 
+    /**
+     * Fabrica e padroniza campos mascarados de senha aplicados em formulários.
+     * * * @return A instância ajustada de {@link JPasswordField}.
+     */
     private JPasswordField criarCampoSenhaForm() {
         JPasswordField f = new JPasswordField();
         f.setFont(new Font("Arial", Font.PLAIN, 14));
@@ -394,6 +418,11 @@ public class TelaPerfil extends TelaMenu {
         return f;
     }
 
+    /**
+     * Instancia rótulos textuais customizados para legendas de inputs.
+     * * * @param texto A string descritiva.
+     * @return O {@link JLabel} configurado.
+     */
     private JLabel rotulo(String texto) {
         JLabel l = new JLabel(texto);
         l.setFont(new Font("Arial", Font.BOLD, 13));
@@ -402,7 +431,11 @@ public class TelaPerfil extends TelaMenu {
         return l;
     }
 
-    /** Converte número de estrelas em string visual: "4" → "★★★★☆" */
+    /**
+     * Transpõe o valor numérico bruto de classificação do estabelecimento em uma cadeia de caracteres estelar.
+     * * * @param qtdStr A string correspondente ao dígito numérico (ex: "4").
+     * @return Uma string formatada (ex: "★★★★☆"), ou um hífen em caso de falha de conversão.
+     */
     private String gerarEstrelas(String qtdStr) {
         try {
             int qtd = Integer.parseInt(qtdStr);
@@ -413,9 +446,10 @@ public class TelaPerfil extends TelaMenu {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  AÇÕES
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Substitui o contêiner cadastral da direita e injeta os campos interativos de senha.
+     * Aplica sanitizações através da classe utilitária {@link RemoveEmoji}.
+     */
     private void exibirFormularioSenha() {
         corpoPrincipal.remove(painelDetalhe);
         painelDetalhe = criarPainelFormularioSenha();
@@ -425,6 +459,9 @@ public class TelaPerfil extends TelaMenu {
         corpoPrincipal.repaint();
     }
 
+    /**
+     * Limpa os cookies temporários locais mapeados por {@link Login} e encerra por completo o processo.
+     */
     private void acaoLogout() {
         Object[] opcoes = {"Sim", "Não"};
         int resposta = JOptionPane.showOptionDialog(
@@ -440,6 +477,9 @@ public class TelaPerfil extends TelaMenu {
         }
     }
 
+    /**
+     * Recarrega por completo a árvore estrutural da janela injetando uma nova instância limpa.
+     */
     private void atualizarTela() {
         if (sist != null) sist.configuraTela(new TelaPerfil(sist));
     }

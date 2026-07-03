@@ -11,23 +11,61 @@ import bd.BancoDados;
 import model.*;
 import repositorio.Dados;
 
+/**
+ * Interface gráfica principal (View) que atua como o Feed de navegação do cliente.
+ * <p>
+ * Apresenta uma arquitetura baseada em {@link CardLayout} para alternar dinamicamente
+ * entre a listagem de estabelecimentos comerciais ("RESTAURANTES") e o catálogo geral
+ * de pratos ("CARDAPIO"). Contém mecanismos automáticos de paginação em grid (4 colunas)
+ * e estende os ganchos de busca global herdados da classe {@link TelaMenu}.
+ * </p>
+ *
+ * @author Arthur, Felipe, Davi
+ * @version 1.2
+ */
 public class TelaPrincipal extends TelaMenu {
+
+    /** Painel de encapsulamento interno para a estrutura da aplicação. */
     private JPanel conteudoApp;
+
+    /** Gerenciador de layout responsável por alternar as telas de restaurantes e produtos. */
     private CardLayout cardLayout;
+
+    /** Contêiner dinâmico controlado pelo {@link #cardLayout}. */
     private JPanel painelDinamico;
+
+    /** Estado numérico do fluxo ativo (1 para Restaurantes, 2 para Cardápio). */
     private int estado = 1;
 
+    /** Cache local contendo a lista completa de restaurantes recuperada do banco de dados. */
     private final ArrayList<Restaurante> todosRestaurantes = new ArrayList<>();
+
+    /** Cache local contendo a lista completa de produtos recuperada do banco de dados. */
     private final ArrayList<Produto> todosCardapios = new ArrayList<>();
+
+    /** Painel estruturado em grid destinado a organizar os cartões visuais de restaurantes. */
     private JPanel listaVerticalRestaurantes;
+
+    /** Painel estruturado em grid destinado a organizar os cartões visuais de pratos. */
     private JPanel listaVerticalCardapio;
+
+    /** Cadeia de caracteres contendo o termo de busca ou filtragem ativo. */
     private String filtroAtual = "";
 
+    /**
+     * Construtor da tela principal do feed do usuário.
+     * <p>
+     * Monta os contêineres de categorias superiores, inicializa os cartões dinâmicos,
+     * consome os dados iniciais de persistência e parametriza a barra de rolagem principal.
+     * </p>
+     *
+     * @param sist O frame base de gerenciamento global de telas {@link Telabase}.
+     */
     public TelaPrincipal(Telabase sist) {
         super(sist);
         JPanel meuFeed = new JPanel(new GridBagLayout());
         meuFeed.setBackground(Color.WHITE);
-        meuFeed.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20)); // Margem interna melhorada
+        meuFeed.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
@@ -43,7 +81,6 @@ public class TelaPrincipal extends TelaMenu {
         gbc.insets = new Insets(0, 0, 25, 0);
         meuFeed.add(criarSecaoCategorias(), gbc);
 
-        // Adiciona as listas ao painel dinâmico controlado por CardLayout
         painelDinamico.add(criarListaRestaurantes(), "RESTAURANTES");
         painelDinamico.add(criarListaCardapio(), "CARDAPIO");
 
@@ -69,6 +106,12 @@ public class TelaPrincipal extends TelaMenu {
         setConteudoInterno(containerFinal);
     }
 
+    /**
+     * Cria a seção superior horizontal que abriga os botões de seleção de abas.
+     * Atribui os gatilhos lógicos de transição para o {@link CardLayout}.
+     *
+     * @return Um {@link JPanel} contendo os botões de controle de categoria.
+     */
     private JPanel criarSecaoCategorias() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
@@ -108,6 +151,11 @@ public class TelaPrincipal extends TelaMenu {
         return panel;
     }
 
+    /**
+     * Inicializa a estrutura da lista de lojas e consome a coleção persistida no banco de dados.
+     *
+     * @return Um {@link JPanel} estruturado com barra de rolagem e preenchido com cartões.
+     */
     private JPanel criarListaRestaurantes() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(Color.WHITE);
@@ -154,7 +202,12 @@ public class TelaPrincipal extends TelaMenu {
         return panel;
     }
 
-    /** Repopula o grid de restaurantes filtrando pelo nome ou localização. */
+    /**
+     * Filtra, distribui e renderiza os cartões de restaurantes organizando-os em um grid de até 4 colunas.
+     * Amarra o evento de clique para redirecionamento até a tela de finalização de pedido.
+     *
+     * @param filtro Palavra-chave contendo o nome ou localização usada para a filtragem.
+     */
     private void popularRestaurantes(String filtro) {
         if (listaVerticalRestaurantes == null) return;
 
@@ -206,7 +259,6 @@ public class TelaPrincipal extends TelaMenu {
             }
         }
 
-        // Empurra tudo para o canto superior esquerdo
         JPanel filler = new JPanel();
         filler.setOpaque(false);
 
@@ -223,6 +275,11 @@ public class TelaPrincipal extends TelaMenu {
         listaVerticalRestaurantes.repaint();
     }
 
+    /**
+     * Inicializa a estrutura da lista de pratos disponíveis e consome os registros armazenados no banco de dados.
+     *
+     * @return Um {@link JPanel} contendo a árvore de componentes do catálogo de pratos.
+     */
     private JPanel criarListaCardapio() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(Color.WHITE);
@@ -269,7 +326,12 @@ public class TelaPrincipal extends TelaMenu {
         return panel;
     }
 
-    /** Repopula o grid de pratos filtrando pelo nome do prato ou do restaurante. */
+    /**
+     * Filtra, distribui e organiza a exibição dos pratos em colunas matriciais.
+     * Acopla gatilhos de clique para inserção do item diretamente no carrinho de compras global do repositório.
+     *
+     * @param filtro Texto descritivo do prato ou do estabelecimento comercial parceiro.
+     */
     private void popularCardapio(String filtro) {
         if (listaVerticalCardapio == null) return;
 
@@ -327,7 +389,6 @@ public class TelaPrincipal extends TelaMenu {
             }
         }
 
-        // Empurra tudo para o canto superior esquerdo
         JPanel filler = new JPanel();
         filler.setOpaque(false);
 
@@ -345,9 +406,10 @@ public class TelaPrincipal extends TelaMenu {
     }
 
     /**
-     * Chamado pela barra de pesquisa do cabeçalho (TelaMenu) sempre que o
-     * usuário digita. Filtra tanto a lista de restaurantes quanto a de
-     * pratos, para que a busca funcione independentemente da aba ativa.
+     * Intercepta as entradas de digitação disparadas a partir do campo de busca unificado do cabeçalho.
+     * Atualiza em tempo real os critérios de filtragem de ambas as coleções gráficas em background.
+     *
+     * @param texto O conteúdo alfanumérico digitado pelo usuário.
      */
     @Override
     protected void aoBuscar(String texto) {

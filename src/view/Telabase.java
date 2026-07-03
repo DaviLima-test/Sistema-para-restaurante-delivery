@@ -1,14 +1,13 @@
 package view;
 
 import model.Login;
-import util.RemoveEmoji;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.io.File;
 import java.util.Objects;
-
+import util.*;
 public class Telabase extends JFrame {
     public static int Width;
     public static int Height;

@@ -2,11 +2,11 @@ package view;
 
 import bd.BancoDados;
 import model.Produto;
-import util.RemoveEmoji;
+
 import model.Pedido;
 import repositorio.Dados;
 import bd.BancoDados; // IMPORTANTE: Import do seu Banco de Dados
-
+import util.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;

@@ -6,25 +6,65 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 
+/**
+ * Superclasse abstrata estrutural (Template View) que estabelece a identidade visual comum
+ * e os mecanismos de navegação global do sistema.
+ * <p>
+ * Implementa um contêiner baseado em {@link JLayeredPane} que gerencia de forma rígida três
+ * níveis independentes de sobreposição através do método interceptado {@code doLayout()}:
+ * </p>
+ * <ul>
+ * <li><b>Camada Padrão (0):</b> O contêiner da aplicação, composto pelo cabeçalho (Header) e o conteúdo injetado pela filha.</li>
+ * <li><b>Camada de Paleta (100):</b> O painel translúcido (Overlay) que escurece o fundo e captura cliques externos.</li>
+ * <li><b>Camada Modal (200):</b> A gaveta de navegação lateral (Barra Lateral) contendo os botões de controle de perfil.</li>
+ * </ul>
+ * * @author Arthur, Felipe, Davi
+ * @version 1.2
+ */
 public abstract class TelaMenu extends JPanel {
+
+    /** Flag indicadora do estado lógico de visibilidade do menu lateral retrátil. */
     protected boolean menu_aberto = false;
+
+    /** Painel de controle de profundidade que gerencia a renderização de componentes sobrepostos. */
     private JLayeredPane camadas;
+
+    /** Menu deslizante lateral contendo as opções e rotas de navegação do usuário. */
     private JPanel barra_lateral;
+
+    /** Painel de fundo semitransparente ativado para criar foco visual no menu aberto. */
     private Overlay overlay;
-    private JPanel conteudoApp;       // Container de fundo que segura o Header + Conteúdo da filha
-    private JPanel conteudoInterno;   // O conteúdo específico que a classe filha vai injetar
+
+    /** Container raiz da camada base que abriga verticalmente o cabeçalho e a área útil. */
+    private JPanel conteudoApp;
+
+    /** Referência do painel de conteúdo específico que a classe filha injetará na visualização. */
+    private JPanel conteudoInterno;
+
+    /** Instância ativa de coordenação de janelas globais do sistema. */
     protected Telabase sist;
 
+    /** Texto explicativo temporário renderizado na caixa de pesquisa. */
     private static final String PLACEHOLDER_BUSCA = " Buscar Restaurantes e pratos ...";
+
+    /** Campo de texto customizado e arredondado para captura dos filtros de pesquisa. */
     private CampoTextoArredondado campoBusca;
 
+    /**
+     * Construtor da base estrutural do menu.
+     * <p>
+     * Sobrescreve dinamicamente o método {@code doLayout()} do painel de camadas para impor dimensões
+     * fixas e relativas absolutas, anulando comportamentos elásticos indesejados. Configura listeners
+     * de clique no overlay e invoca a montagem dos botões de rotas.
+     * </p>
+     *
+     * @param sist O frame base de gerenciamento global de telas {@link Telabase}.
+     */
     public TelaMenu(Telabase sist) {
         this.sist = sist;
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
 
-        // 1. Inicializa o Painel de Camadas principal SOBRESCREVENDO o doLayout()
-        // Isso atua como um Layout Manager rígido que impede saltos ou encolhimento de componentes
         camadas = new JLayeredPane() {
             @Override
             public void doLayout() {
@@ -38,17 +78,15 @@ public abstract class TelaMenu extends JPanel {
                     overlay.setBounds(0, 0, largura, altura);
                 }
                 if (barra_lateral != null) {
-                    barra_lateral.setBounds(0, 0, 250, altura); // Mantém a barra lateral com 250px fixos de largura
+                    barra_lateral.setBounds(0, 0, 250, altura);
                 }
             }
         };
         add(camadas, BorderLayout.CENTER);
 
-        // 2. Inicializa o Container Principal do App (Camada de Fundo)
         conteudoApp = new JPanel(new BorderLayout());
         conteudoApp.setBackground(Color.WHITE);
 
-        // 3. Inicializa o Overlay (Camada do Meio) e adiciona o clique para fechar
         overlay = new Overlay();
         overlay.setVisible(false);
         overlay.addMouseListener(new MouseAdapter() {
@@ -58,28 +96,27 @@ public abstract class TelaMenu extends JPanel {
             }
         });
 
-        // 4. Inicializa a Barra Lateral (Camada de Frente)
         barra_lateral = new JPanel();
         barra_lateral.setLayout(new BoxLayout(barra_lateral, BoxLayout.Y_AXIS));
         barra_lateral.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2, true));
         barra_lateral.setBackground(Color.WHITE);
         barra_lateral.setVisible(false);
 
-        // 5. Instancia o HeaderPanel separado, passando a função de alternar o menu
         JPanel header = criarHeader();
         conteudoApp.add(header, BorderLayout.NORTH);
 
-        // Montagem das Camadas
-        camadas.add(conteudoApp, JLayeredPane.DEFAULT_LAYER);  // Camada 0
-        camadas.add(overlay, JLayeredPane.PALETTE_LAYER);      // Camada 100
-        camadas.add(barra_lateral, JLayeredPane.MODAL_LAYER);  // Camada 200
-
-        // NOTA: O ComponentListener antigo e os setBounds iniciais engessados foram removidos,
-        // pois o doLayout() acima assume o controle total dinamicamente.
+        camadas.add(conteudoApp, JLayeredPane.DEFAULT_LAYER);
+        camadas.add(overlay, JLayeredPane.PALETTE_LAYER);
+        camadas.add(barra_lateral, JLayeredPane.MODAL_LAYER);
 
         iniciaMenu();
     }
 
+    /**
+     * Constrói o cabeçalho superior (Header) da aplicação contendo o botão do menu, a logo e a barra de busca.
+     * Vincila listeners de foco e teclado para controle do placeholder e submissão reativa de texto.
+     * * * @return Um {@link JPanel} estruturado em {@link GridBagLayout} para o topo do sistema.
+     */
     private JPanel criarHeader() {
         JPanel p = new JPanel(new GridBagLayout());
         p.setBackground(Color.WHITE);
@@ -99,8 +136,6 @@ public abstract class TelaMenu extends JPanel {
         gbc.weightx = 0.0;
 
         p.add(bnt_hambuger, gbc);
-
-        // Aciona a função da própria classe
         bnt_hambuger.addActionListener(e -> alternarMenu());
 
         Texto logo = new Texto("AIFood");
@@ -168,15 +203,21 @@ public abstract class TelaMenu extends JPanel {
     }
 
     /**
-     * Ponto de extensão chamado sempre que o texto da barra de pesquisa muda.
-     * Cada tela filha que exibe uma lista pesquisável (ex.: TelaPrincipal)
-     * deve sobrescrever este método para filtrar seu próprio conteúdo.
+     * Ponto de extensão assíncrono disparado sempre que há modificação no texto da barra de pesquisa.
+     * <p>
+     * Classes filhas que renderizam listagens filtráveis devem obrigatoriamente sobrescrever este método
+     * para interceptar a string e aplicar seus filtros específicos.
+     * </p>
+     *
+     * @param texto Cadeia de caracteres contendo o termo de pesquisa limpo.
      */
     protected void aoBuscar(String texto) {
-        // Implementação padrão vazia: telas que não possuem lista pesquisável
-        // simplesmente ignoram a busca.
     }
 
+    /**
+     * Acopla o painel interno de trabalho enviado pela classe filha na região central da camada base.
+     * * * @param painelFilho O contêiner {@link JPanel} estruturado pela tela filha.
+     */
     protected void setConteudoInterno(JPanel painelFilho) {
         this.conteudoInterno = painelFilho;
         conteudoApp.add(painelFilho, BorderLayout.CENTER);
@@ -185,6 +226,10 @@ public abstract class TelaMenu extends JPanel {
         conteudoApp.repaint();
     }
 
+    /**
+     * Inicializa a esteira de opções padrão do menu lateral e injeta condicionalmente botões de
+     * controle específicos baseados no nível de privilégio e tipo de perfil retornado por {@link Login}.
+     */
     public void iniciaMenu() {
         adicionarItemMenu("Perfil", e -> {
             if(sist != null) {
@@ -197,7 +242,7 @@ public abstract class TelaMenu extends JPanel {
             sist.configuraTela(tc);
         });
         adicionarItemMenu("Meus pedidos", e -> {
-            TelaPedidosCliente tp =new TelaPedidosCliente(sist);
+            TelaPedidosCliente tp = new TelaPedidosCliente(sist);
             sist.configuraTela(tp);
         });
         adicionarItemMenu("Carteira", e -> {
@@ -206,11 +251,11 @@ public abstract class TelaMenu extends JPanel {
         });
 
         if ("restaurante".equals(Login.GetTipo())) {
-                if(BancoDados.buscarRestaurantePorGerente(Login.GetEmail())==null)
+            if(BancoDados.buscarRestaurantePorGerente(Login.GetEmail()) == null)
                 adicionarItemMenu("Cadastrar Restaurante", e -> sist.configuraTela(new TelaNovoRestaurante(sist)));
-                else
+            else
                 adicionarItemMenu("Gerenciar Restaurante", e -> sist.configuraTela(new TelaGerenciarRestaurante(sist)));
-                adicionarItemMenu("Pedidos", e -> sist.configuraTela(new TelaPedidosRestaurante(sist)));
+            adicionarItemMenu("Pedidos", e -> sist.configuraTela(new TelaPedidosRestaurante(sist)));
         }
         if ("entregador".equals(Login.GetTipo())) {
             adicionarItemMenu("Pedidos a serem entregues", e -> {
@@ -235,6 +280,12 @@ public abstract class TelaMenu extends JPanel {
         });
     }
 
+    /**
+     * Fabrica, estiliza e anexa individualmente um botão de controle à lista vertical da barra lateral.
+     *
+     * @param texto O rótulo descritivo a ser impresso no botão.
+     * @param e     O ouvinte de ação {@link ActionListener} contendo a regra de redirecionamento de tela.
+     */
     private void adicionarItemMenu(String texto, ActionListener e) {
         BotaoArredondado btn = new BotaoArredondado(texto, 25, Color.decode("#e96769"), 20);
         btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
@@ -247,20 +298,26 @@ public abstract class TelaMenu extends JPanel {
         barra_lateral.add(Box.createVerticalStrut(15));
     }
 
+    /**
+     * Inverte de forma lógica o estado atual de exibição do painel de navegação lateral.
+     */
     protected void alternarMenu(){
         configurarMenu(!menu_aberto);
     }
 
+    /**
+     * Altera de forma coordenada a visibilidade das camadas de sobreposição.
+     * Atualiza as propriedades de exibição do overlay e da barra de navegação, forçando a
+     * árvore de componentes a reexecutar o gerenciador de renderização dinâmica de forma estável.
+     *
+     * @param abrir Roteia {@code true} para abrir e exibir as camadas, ou {@code false} para ocultá-las.
+     */
     private void configurarMenu(boolean abrir) {
         menu_aberto = abrir;
 
-        // Apenas alternamos a visibilidade das camadas sobrepostas
         overlay.setVisible(menu_aberto);
         barra_lateral.setVisible(menu_aberto);
 
-        // Removidas as linhas antigas de 'setPreferredSize(..., 0)' que quebravam o layout do BoxLayout interno
-
-        // Dispara a revalidação a partir do gerenciador de camadas para forçar a execução estável do doLayout()
         camadas.revalidate();
         camadas.repaint();
     }

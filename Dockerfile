@@ -10,10 +10,10 @@ WORKDIR /app
 COPY src ./src
 
 # 4. Copia as dependências (.jar) da raiz para dentro do container
-COPY com.miglayout.core_11.4.2.jar .
-COPY com.miglayout.swing_11.4.2.jar .
-COPY flatlaf-3.7.1.jar .
-COPY mysql-connector-j-8.0.33/mysql-connector-j-8.0.33.jar ./mysql-connector-j-8.0.33.jar
+COPY lib/com.miglayout.core_11.4.2.jar .
+COPY lib/com.miglayout.swing_11.4.2.jar .
+COPY lib/flatlaf-3.7.1.jar .
+COPY lib/mysql-connector-j-8.0.33/mysql-connector-j-8.0.33.jar ./mysql-connector-j-8.0.33.jar
 
 # 5. Compila o projeto incluindo as bibliotecas no Classpath (-cp)
 RUN find src -name "*.java" > sources.txt && \

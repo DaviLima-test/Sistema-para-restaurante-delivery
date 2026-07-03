@@ -1,7 +1,6 @@
 package view;
 
 import util.RemoveEmoji;
-
 import model.Produto;
 import javax.swing.*;
 import java.awt.*;
@@ -11,31 +10,66 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import bd.BancoDados;
 import repositorio.Dados;
-// Importe a sua classe Dados aqui se ela estiver em outro pacote, ex: import bd.Dados;
 
+/**
+ * Interface gráfica (View) encarregada de exibir o cardápio de um restaurante específico
+ * e gerenciar a montagem reativa do pedido do cliente.
+ * <p>
+ * Apresenta uma arquitetura de visualização dividida em duas colunas (Grid de 1x2):
+ * A coluna esquerda lista os produtos retornados do banco de dados para o estabelecimento selecionado.
+ * A coluna direita atua como um carrinho dinâmico local, que agrupa itens repetidos adicionados,
+ * calcula subtotais em tempo real e fornece controles para incremento ou decremento de unidades.
+ * </p>
+ * * @author Arthur, Felipe, Davi
+ * @version 1.2
+ */
 public class TelaFazerPedido extends TelaMenu {
 
+    /** Instância ativa de controle de navegação e troca de telas globais. */
     private final Telabase sist;
+
+    /** Identificador numérico único do restaurante selecionado para filtragem do cardápio. */
     private final int idRestaurante;
 
+    /** Contêiner central estruturado para abrigar as seções da tela. */
     private JPanel corpoPrincipal;
-    private JPanel painelDetalhe; // Representa o painel do Carrinho
 
+    /** Painel lateral direito reativo que gerencia visualmente os itens do carrinho e checkout. */
+    private JPanel painelDetalhe;
+
+    /** Listagem em cache local contendo os pratos disponíveis do restaurante atual. */
     private ArrayList<Produto> cardapio = new ArrayList<>();
 
-    // Cores do seu sistema
+    /** Tonalidade vermelha corporativa para realce do preço total e elementos de destaque. */
     private static final Color COR_PRIMARIA   = new Color(234, 16, 34);
+
+    /** Tonalidade verde para preços individuais, botões de pagamento e confirmação. */
     private static final Color COR_VERDE      = new Color(46, 174, 82);
+
+    /** Cor cinza neutra de fundo destinada a painéis internos e placeholders vazios. */
     private static final Color COR_CINZA_BG   = new Color(245, 245, 245);
+
+    /** Cor sutil padronizada para pintura de contornos e divisórias de componentes. */
     private static final Color COR_BORDA      = new Color(230, 230, 230);
+
+    /** Cor sutil de fundo ativada na passagem do cursor do mouse sobre o card (Hover). */
     private static final Color COR_CARD_HOVER = new Color(255, 242, 242);
 
+    /**
+     * Construtor da tela de realização de pedidos.
+     * <p>
+     * Inicializa a lista global de persistência do carrinho caso necessário, consome a listagem do
+     * cardápio via {@link BancoDados}, organiza a divisão espacial do layout e acopla as barras de rolagem.
+     * </p>
+     *
+     * @param sist          O frame base de gerenciamento global de telas {@link Telabase}.
+     * @param idRestaurante O identificador primário do restaurante selecionado.
+     */
     public TelaFazerPedido(Telabase sist, int idRestaurante) {
         super(sist);
         this.sist = sist;
         this.idRestaurante = idRestaurante;
 
-        // Garante que a lista global exista para não dar NullPointerException
         if (Dados.listaCarrinho == null) {
             Dados.listaCarrinho = new ArrayList<>();
         }
@@ -52,7 +86,6 @@ public class TelaFazerPedido extends TelaMenu {
 
         corpoPrincipal.add(criarPainelLista());
 
-        // Carrega o painel direito utilizando os dados globais
         painelDetalhe = criarPainelCarrinho();
         corpoPrincipal.add(painelDetalhe);
 
@@ -65,6 +98,10 @@ public class TelaFazerPedido extends TelaMenu {
         setConteudoInterno(container);
     }
 
+    /**
+     * Constrói a seção de cabeçalho superior contendo títulos informativos e instruções da tela.
+     * * @return Um {@link JPanel} contendo o layout de títulos formatado.
+     */
     private JPanel criarCabecalho() {
         JPanel p = new JPanel(new BorderLayout());
         p.setBackground(Color.WHITE);
@@ -91,6 +128,11 @@ public class TelaFazerPedido extends TelaMenu {
         return p;
     }
 
+    /**
+     * Constrói a coluna esquerda contendo a listagem de pratos disponíveis no cardápio.
+     * Trata cenários visuais onde o estabelecimento não possui itens cadastrados.
+     * * @return Um {@link JPanel} de rolagem com os cartões dos produtos empilhados.
+     */
     private JPanel criarPainelLista() {
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setBackground(Color.WHITE);
@@ -130,6 +172,12 @@ public class TelaFazerPedido extends TelaMenu {
         return wrapper;
     }
 
+    /**
+     * Fabrica o componente visual individualizado (Card) para exibição de dados de um prato.
+     * Configura ouvidores de mouse para aplicar reatividade de cor ao passar ou clicar no item.
+     * * @param produto A entidade {@link Produto} que servirá de base para renderização das informações.
+     * @return Um {@link JPanel} interativo configurado.
+     */
     private JPanel criarCardProduto(Produto produto) {
         JPanel card = new JPanel(new GridBagLayout());
         card.setBackground(Color.WHITE);
@@ -183,9 +231,14 @@ public class TelaFazerPedido extends TelaMenu {
         return card;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  PAINEL DA DIREITA — LEITURA DA LISTA GLOBAL
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Constrói reativamente o painel do carrinho de compras realizando a leitura do repositório global.
+     * <p>
+     * Utiliza uma estrutura {@link LinkedHashMap} para fins de exibição na interface, agrupando objetos
+     * repetidos da lista volátil, computando quantidades mapeadas e exibindo o valor de fechamento.
+     * </p>
+     * * @return Um {@link JPanel} estruturado contendo as linhas de faturamento do pedido.
+     */
     private JPanel criarPainelCarrinho() {
         JPanel painel = new JPanel(new BorderLayout());
         painel.setBackground(Color.WHITE);
@@ -199,7 +252,6 @@ public class TelaFazerPedido extends TelaMenu {
         lblTitulo.setForeground(new Color(30, 30, 30));
         painel.add(lblTitulo, BorderLayout.NORTH);
 
-        // Se a lista global estiver vazia
         if (Dados.listaCarrinho == null || Dados.listaCarrinho.isEmpty()) {
             JPanel placeholder = new JPanel(new GridBagLayout());
             placeholder.setBackground(COR_CINZA_BG);
@@ -214,7 +266,6 @@ public class TelaFazerPedido extends TelaMenu {
             return painel;
         }
 
-        // MÁGICA: Agrupa os itens repetidos da lista global apenas para exibir na interface
         LinkedHashMap<Produto, Integer> itensAgrupados = new LinkedHashMap<>();
         for (Produto p : Dados.listaCarrinho) {
             itensAgrupados.put(p, itensAgrupados.getOrDefault(p, 0) + 1);
@@ -293,23 +344,29 @@ public class TelaFazerPedido extends TelaMenu {
         return painel;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  LÓGICA UTILIZANDO A LISTA GLOBAL
-    // ─────────────────────────────────────────────────────────
-
+    /**
+     * Insere uma referência de produto diretamente na lista estática global e força a repintura do painel.
+     * * @param produto A instância de {@link Produto} que será injetada no carrinho.
+     */
     private void adicionarAoCarrinho(Produto produto) {
-        // Adiciona o prato diretamente no ArrayList global
         Dados.listaCarrinho.add(produto);
         atualizarPainelCarrinho();
     }
 
+    /**
+     * Exclui a primeira ocorrência encontrada do produto selecionado na lista estática global,
+     * reduzindo a quantidade empilhada e disparando a reconstrução do painel.
+     * * @param produto O item do tipo {@link Produto} que será removido/reduzido.
+     */
     private void removerOuDiminuir(Produto produto) {
-        // O método .remove(Object) do ArrayList tira a primeira ocorrência que achar,
-        // diminuindo a quantidade de 1 em 1 perfeitamente!
         Dados.listaCarrinho.remove(produto);
         atualizarPainelCarrinho();
     }
 
+    /**
+     * Gerencia a substituição estrutural do painel do carrinho na árvore do contêiner,
+     * limpando o estado desatualizado, aplicando a limpeza de emojis e revalidando a interface.
+     */
     private void atualizarPainelCarrinho() {
         corpoPrincipal.remove(painelDetalhe);
         painelDetalhe = criarPainelCarrinho();
@@ -319,6 +376,10 @@ public class TelaFazerPedido extends TelaMenu {
         corpoPrincipal.repaint();
     }
 
+    /**
+     * Gatilho de controle de faturamento que redireciona o fluxo de navegação do usuário
+     * para a view consolidada de fechamento {@link TelaCarrinho}.
+     */
     private void Pagarpedido() {
         TelaCarrinho tc = new TelaCarrinho(sist);
         sist.configuraTela(tc);

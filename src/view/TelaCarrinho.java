@@ -12,27 +12,58 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 
+/**
+ * Interface gráfica (View) do carrinho de compras do cliente na plataforma de delivery.
+ * <p>
+ * Apresenta uma disposição dividida em duas colunas através de uma malha (Grid de 1x2):
+ * A coluna da esquerda exibe a listagem dos produtos adicionados com suporte a remoção individual,
+ * enquanto a coluna da direita agrupa o resumo financeiro, endereço de destino, método de pagamento
+ * e o controle de validação do fechamento do pedido.
+ * </p>
+ * * @author Arthur, Felipe, Davi
+ * @version 1.2
+ */
 public class TelaCarrinho extends TelaMenu {
 
+    /** Instância de controle de navegação global de janelas do sistema. */
     private final Telabase sist;
+
+    /** Painel lateral direito reativo responsável pelo resumo analítico e checkout. */
     private JPanel painelCheckout;
+
+    /** Container central estruturado para abrigar as seções da tela. */
     private JPanel corpoPrincipal;
 
-    // Cores padronizadas do ecossistema
+    /** Tonalidade vermelha institucional para realce visual e sinalizações de erro/alerta. */
     private static final Color COR_PRIMARIA   = new Color(234, 16, 34);
+
+    /** Tonalidade verde para botões de confirmação e indicadores financeiros positivos. */
     private static final Color COR_VERDE      = new Color(46, 174, 82);
+
+    /** Cor cinza neutra clara para estilização de fundos de seções internas (cards). */
     private static final Color COR_CINZA_BG   = new Color(245, 245, 245);
+
+    /** Cor sutil de delimitação para bordas de componentes. */
     private static final Color COR_BORDA      = new Color(230, 230, 230);
+
+    /** Cor de realce para eventos de foco ou passagem do cursor (Hover). */
     private static final Color COR_CARD_HOVER = new Color(255, 242, 242);
 
+    /**
+     * Construtor da tela de carrinho de compras.
+     * <p>
+     * Garante a inicialização da lista de persistência volátil na memória, monta a árvore de
+     * layouts dividida em colunas e encapsula os subpainéis em um contêiner de rolagem síncrona.
+     * </p>
+     *
+     * @param sist O frame base de gerenciamento global de telas {@link Telabase}.
+     */
     public TelaCarrinho(Telabase sist) {
         super(sist);
         this.sist = sist;
 
-        // Inicializa a lista do carrinho caso esteja nula no repositório
         if (Dados.listaCarrinho == null) {
             Dados.listaCarrinho = new ArrayList<>();
-            // Itens de demonstração inicial caso o carrinho abra vazio pela primeira vez
             criarItensCarrinho();
         }
 
@@ -40,7 +71,6 @@ public class TelaCarrinho extends TelaMenu {
         container.setBackground(Color.WHITE);
         container.add(criarCabecalho(), BorderLayout.NORTH);
 
-        // Layout Dividido: 40% Lista de Itens (Esquerda) e 60% Resumo e Pagamento (Direita)
         corpoPrincipal = new JPanel(new GridLayout(1, 2, 24, 0));
         corpoPrincipal.setBackground(Color.WHITE);
         corpoPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
@@ -57,9 +87,10 @@ public class TelaCarrinho extends TelaMenu {
         setConteudoInterno(container);
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  CABEÇALHO
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Cria a barra de título superior contendo o rótulo da tela e o controle de esvaziamento total.
+     * * @return Um {@link JPanel} de cabeçalho configurado.
+     */
     private JPanel criarCabecalho() {
         JPanel p = new JPanel(new BorderLayout());
         p.setBackground(Color.WHITE);
@@ -86,9 +117,10 @@ public class TelaCarrinho extends TelaMenu {
         return p;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  PAINEL DA ESQUERDA: LISTA DE PRODUTOS ADICIONADOS
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Constrói a subseção de listagem de produtos adicionados, tratando cenários de carrinho vazio.
+     * * @return Um {@link JPanel} contendo os cartões de produtos empilhados verticalmente.
+     */
     private JPanel criarPainelItens() {
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setBackground(Color.WHITE);
@@ -126,6 +158,13 @@ public class TelaCarrinho extends TelaMenu {
         return wrapper;
     }
 
+    /**
+     * Fabrica o componente visual individualizado de um produto contido no carrinho.
+     * Utiliza o gerenciador {@link GridBagLayout} para garantir o alinhamento de textos e ícones.
+     *
+     * @param prod A entidade {@link Produto} que servirá de base para a renderização do card.
+     * @return Um {@link JPanel} contendo as informações do item e botão de exclusão.
+     */
     private JPanel criarCardProdutoCarrinho(Produto prod) {
         JPanel card = new JPanel(new GridBagLayout());
         card.setBackground(Color.WHITE);
@@ -138,7 +177,6 @@ public class TelaCarrinho extends TelaMenu {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.anchor = GridBagConstraints.WEST;
 
-        // Ícone customizado por tipo de item
         JLabel lblIcon = new JLabel("🍔");
         lblIcon.setFont(new Font("Arial", Font.PLAIN, 24));
         gbc.gridx = 0; gbc.gridy = 0; gbc.gridheight = 2;
@@ -147,21 +185,18 @@ public class TelaCarrinho extends TelaMenu {
 
         gbc.gridheight = 1;
 
-        // Nome do Produto
         JLabel lblNome = new JLabel(prod.getNome() != null ? prod.getNome() : "Item Individual");
         lblNome.setFont(new Font("Arial", Font.BOLD, 14));
         gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         card.add(lblNome, gbc);
 
-        // Preço Mockado
         JLabel lblPreco = new JLabel("R$ 28,90");
         lblPreco.setFont(new Font("Arial", Font.BOLD, 13));
         lblPreco.setForeground(new Color(50, 50, 50));
         gbc.gridx = 1; gbc.gridy = 1;
         card.add(lblPreco, gbc);
 
-        // Botão de Excluir Item individual
         JButton btnRemover = new JButton("🗑️");
         btnRemover.setBorderPainted(false);
         btnRemover.setContentAreaFilled(false);
@@ -179,9 +214,11 @@ public class TelaCarrinho extends TelaMenu {
         return card;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  PAINEL DA DIREITA: REVISÃO DE ENDEREÇO, VALORES E CHECKOUT
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Constrói a interface de fechamento analítico de valores, localização e condições de pagamento.
+     * Valida de forma acoplada o estado do botão finalizador em caso de ausência de fundos ou itens.
+     * * @return Um {@link JPanel} estruturado com as caixas informativas e gatilhos de submissão.
+     */
     private JPanel criarPainelCheckout() {
         JPanel painel = new JPanel();
         painel.setLayout(new BoxLayout(painel, BoxLayout.Y_AXIS));
@@ -198,14 +235,12 @@ public class TelaCarrinho extends TelaMenu {
         painel.add(lblTitulo);
         painel.add(Box.createVerticalStrut(20));
 
-        // Seção 1: Destino da Entrega
         painel.add(criarSecaoCarrinho("📍 Endereço de Entrega", new String[][]{
                 {"Local", "Casa"},
                 {"Endereço", "Rua das Oliveiras, 452 - Apt 12"}
         }));
         painel.add(Box.createVerticalStrut(14));
 
-        // ALTERADO: Método de pagamento integrado com tratamento de erro (Fallback para sem cartão)
         Cartao cartao = Cartao.GetPrincipal();
         boolean possuiCartao = (cartao != null);
 
@@ -216,7 +251,6 @@ public class TelaCarrinho extends TelaMenu {
                     {"Tipo", cartao.getBandeira()}
             }));
         } else {
-            // Exibe mensagem de erro avisando que não há cartões
             painel.add(criarSecaoCarrinho("⚠️ Forma de Pagamento", new String[][]{
                     {"Status", "Nenhum cartão cadastrado!"},
                     {"Ação", "Cadastre um cartão no seu perfil"}
@@ -224,7 +258,6 @@ public class TelaCarrinho extends TelaMenu {
         }
         painel.add(Box.createVerticalStrut(14));
 
-        // Seção 3: Cálculos de Valores baseados nos itens do carrinho
         double subtotal = Dados.listaCarrinho.size() * 28.90;
         double taxaEntrega = Dados.listaCarrinho.isEmpty() ? 0.0 : 7.00;
         double totalGeral = subtotal + taxaEntrega;
@@ -238,12 +271,10 @@ public class TelaCarrinho extends TelaMenu {
         painel.add(Box.createVerticalGlue());
         painel.add(Box.createVerticalStrut(20));
 
-        // Botão de Ação com validações acopladas
         BotaoArredondado btnFinalizar = new BotaoArredondado("🚀 Confirmar e Fazer Pedido", 22, COR_VERDE, 15);
         btnFinalizar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
         btnFinalizar.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // ALTERADO: Validação do botão para impedir o envio caso não haja cartão ou se o carrinho estiver vazio
         if (Dados.listaCarrinho.isEmpty()) {
             btnFinalizar.setEnabled(false);
             btnFinalizar.setBackground(Color.LIGHT_GRAY);
@@ -261,6 +292,13 @@ public class TelaCarrinho extends TelaMenu {
         return painel;
     }
 
+    /**
+     * Helper visual destinado a criar sub-caixas estilizadas cinzas para organização dos dados.
+     *
+     * @param titulo O título que será posicionado na parte superior do bloco.
+     * @param pares  Uma matriz bidimensional de Strings representando pares de Chave e Valor.
+     * @return Um {@link JPanel} contendo o layout formatado em linhas.
+     */
     private JPanel criarSecaoCarrinho(String titulo, String[][] pares) {
         JPanel s = new JPanel();
         s.setLayout(new BoxLayout(s, BoxLayout.Y_AXIS));
@@ -290,13 +328,11 @@ public class TelaCarrinho extends TelaMenu {
             valor.setFont(new Font("Arial", Font.PLAIN, 12));
             valor.setForeground(Color.BLACK);
 
-            // Destaca visualmente o valor do Total Geral
             if(par[0].equals("Total Geral")) {
                 chave.setFont(new Font("Arial", Font.BOLD, 13));
                 valor.setFont(new Font("Arial", Font.BOLD, 14));
                 valor.setForeground(COR_VERDE);
             }
-            // ALTERADO: Destaca visualmente em vermelho se não houver cartão cadastrado
             else if(par[1].equals("Nenhum cartão cadastrado!")) {
                 valor.setFont(new Font("Arial", Font.BOLD, 12));
                 valor.setForeground(COR_PRIMARIA);
@@ -309,9 +345,12 @@ public class TelaCarrinho extends TelaMenu {
         return s;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  REGRAS DE NEGÓCIO: ADIÇÃO E PRODUÇÃO DO PEDIDO
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Processa as regras de negócio de fechamento de compra, registrando o pedido no banco de dados.
+     * Caso a operação falte ou suceda, limpa o carrinho e redireciona o cliente para seu histórico.
+     *
+     * @param valorTotal O valor financeiro consolidado acumulado do pedido.
+     */
     private void finalizarPedidoDoCarrinho(double valorTotal) {
         if (Dados.listaCarrinho.isEmpty()) return;
 
@@ -338,12 +377,18 @@ public class TelaCarrinho extends TelaMenu {
         }
     }
 
+    /**
+     * Força a reconstrução estrutural completa da tela, instanciando uma nova view para atualizar dados de remoção.
+     */
     private void atualizarTela() {
         if (sist != null) {
             sist.configuraTela(new TelaCarrinho(sist));
         }
     }
 
+    /**
+     * Método interno utilitário para popular o carrinho com itens mockados caso ele seja aberto pela primeira vez vazio.
+     */
     private void criarItensCarrinho() {
         Produto p1 = new Produto(); p1.setNome("X-Burguer Duplo Cheddar");
         Produto p2 = new Produto(); p2.setNome("Batata Frita Grande Média");

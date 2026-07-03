@@ -1,5 +1,7 @@
 package model;
 
+import bd.BancoDados;
+
 import java.util.ArrayList;
 
 /**
@@ -34,6 +36,10 @@ public class Pedido {
         this.EstadoRestaurante        = 1;
     }
 
+    public Pedido() {
+
+    }
+
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
@@ -55,4 +61,40 @@ public class Pedido {
     public Restaurante getRestaurante()   { return restaurante; }
     public String      getFormaPagamento(){ return formaPagamento; }
     public void        setFormaPagamento(String fp) { this.formaPagamento = fp; }
+
+    public void setComidas(ArrayList<Produto> comidas) {
+        this.comidas = comidas;
+    }
+
+    public void setHora_Entregue(String hora_Entregue) {
+        Hora_Entregue = hora_Entregue;
+    }
+
+    public void setHoraPagoComidaEntregador(String horaPagoComidaEntregador) {
+        HoraPagoComidaEntregador = horaPagoComidaEntregador;
+    }
+
+    public void setCliente(Cliente cliente) {
+        this.cliente = cliente;
+    }
+
+    public void setRestaurante(Restaurante restaurante) {
+        this.restaurante = restaurante;
+    }
+
+    public void setIdRestaurante(int idRestaurante) {
+        this.restaurante = BancoDados.buscarRestaurantePorId(idRestaurante);
+    }
+
+    public void setIdCliente(int idCliente) {
+        this.cliente = BancoDados.obterClientePorId(idCliente);
+    }
+
+    public void setIdEntregador(int idEntregador) {
+        this.entregador = (Entregador) BancoDados.obterClientePorId(idEntregador);
+    }
+
+    public void setStatus(int status) {
+
+    }
 }

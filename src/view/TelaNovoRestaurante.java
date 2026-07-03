@@ -273,7 +273,7 @@ public class TelaNovoRestaurante extends TelaMenu {
 
         setFeedback("⏳  Cadastrando...", Color.GRAY);
 
-        boolean ok = BancoDados.cadastrarRestaurante(nome, localizacao, emailGerente, senha, "5");
+        boolean ok = BancoDados.cadastrarRestaurante(emailGerente, senha, nome,localizacao,"5");
 
         if (ok) {
             setFeedback("✅  Restaurante cadastrado com sucesso!", COR_VERDE);

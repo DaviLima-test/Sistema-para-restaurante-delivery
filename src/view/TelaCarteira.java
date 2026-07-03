@@ -1,7 +1,6 @@
 package view;
 
 import util.RemoveEmoji;
-
 import model.Cartao;
 
 import javax.swing.*;
@@ -12,50 +11,76 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * TelaCarteira — Exibe os cartões cadastrados à esquerda (40%)
- * e os detalhes ou formulário de cadastro à direita (60%).
+ * Interface gráfica (View) destinada ao gerenciamento de métodos de pagamento do cliente.
+ * <p>
+ * Apresenta uma arquitetura dividida em duas colunas através de uma malha (Grid de 1x2):
+ * A coluna da esquerda (40%) renderiza a listagem com barra de rolagem de cartões cadastrados e
+ * seus respectivos status (Principal/Secundário), enquanto a coluna da direita (60%) atua de forma
+ * reativa como um contêiner dinâmico, alternando entre um informativo padrão, a visualização de
+ * detalhes do item selecionado ou o formulário interativo de cadastro.
+ * </p>
+ * * @author Arthur, Felipe, Davi
+ * @version 1.2
  */
 public class TelaCarteira extends TelaMenu {
 
+    /** Instância ativa de coordenação e navegação de janelas globais do sistema. */
     private final Telabase sist;
 
+    /** Painel lateral direito reativo para exibição de detalhes, placeholders ou formulários. */
     private JPanel painelDetalhe;
+
+    /** Container central estruturado para abrigar a distribuição das seções na tela. */
     private JPanel corpoPrincipal;
+
+    /** Referência da entidade temporariamente selecionada pelo usuário para auditoria. */
     private Cartao cartaoSelecionado;
 
-    // Lista simulada de cartões (substitua por Dados.listaCartoes se preferir)
+    /** Lista estática que gerencia e centraliza os registros em cache volátil na memória. */
     private static List<Cartao> listaCartoesMemoria;
 
-    // Cores padrão do seu projeto
+    /** Tonalidade vermelha corporativa para realces visuais e sinalizações de ações críticas. */
     private static final Color COR_PRIMARIA = new Color(234, 16, 34);
+
+    /** Tonalidade verde associada a confirmações, adições bem-sucedidas e status ativos. */
     private static final Color COR_VERDE = new Color(46, 174, 82);
+
+    /** Cor cinza de fundo neutro para demarcação de sub-seções internas. */
     private static final Color COR_CINZA_BG = new Color(245, 245, 245);
+
+    /** Cor sutil padronizada para pintura de contornos e bordas de componentes. */
     private static final Color COR_BORDA = new Color(230, 230, 230);
+
+    /** Cor sutil aplicada como realce de fundo durante eventos de passagem do cursor mouse (Hover). */
     private static final Color COR_CARD_HOVER = new Color(255, 242, 242);
 
+    /**
+     * Construtor da tela de carteira de pagamentos.
+     * <p>
+     * Verifica e aciona a inicialização da massa de dados em cache, cria os componentes estruturais,
+     * define o lado direito em estado inicial de placeholder e acopla o scroll vertical suave.
+     * </p>
+     *
+     * @param sist O frame base de gerenciamento global de telas {@link Telabase}.
+     */
     public TelaCarteira(Telabase sist) {
         super(sist);
         this.sist = sist;
 
-        // Inicializa dados fictícios se a lista estiver vazia
         if (listaCartoesMemoria == null) {
             inicializarCartoes();
         }
 
-        // Container raiz desta tela
         JPanel container = new JPanel(new BorderLayout());
         container.setBackground(Color.WHITE);
         container.add(criarCabecalho(), BorderLayout.NORTH);
 
-        // MODO PADRÃO: Lista (esquerda - 40%) + Detalhe/Formulário (direita - 60%)
         corpoPrincipal = new JPanel(new GridLayout(1, 2, 20, 0));
         corpoPrincipal.setBackground(Color.WHITE);
         corpoPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
 
-        // Adiciona a lista de cartões cadastrados
         corpoPrincipal.add(criarPainelLista());
 
-        // Define o lado direito inicial como placeholder informativo
         painelDetalhe = criarPainelDetalhePlaceholder();
         corpoPrincipal.add(painelDetalhe);
 
@@ -68,9 +93,10 @@ public class TelaCarteira extends TelaMenu {
         setConteudoInterno(container);
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  CABEÇALHO
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Fabrica o painel superior da tela com o título da seção e o gatilho de adição de novos cartões.
+     * * @return Um {@link JPanel} de cabeçalho configurado.
+     */
     private JPanel criarCabecalho() {
         JPanel p = new JPanel(new BorderLayout());
         p.setBackground(Color.WHITE);
@@ -85,7 +111,6 @@ public class TelaCarteira extends TelaMenu {
         titulo.setHorizontalAlignment(SwingConstants.LEFT);
         p.add(titulo, BorderLayout.WEST);
 
-        // Botão para abrir o formulário de adição de cartão
         BotaoArredondado btnAdicionar = new BotaoArredondado("+ Adicionar Cartão", 20, COR_VERDE, 14);
         btnAdicionar.setPreferredSize(new Dimension(170, 38));
         btnAdicionar.addActionListener(e -> exibirFormularioCadastro());
@@ -94,9 +119,10 @@ public class TelaCarteira extends TelaMenu {
         return p;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  PAINEL DA LISTA DE CARTÕES
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Monta a subseção esquerda que lista os cartões, tratando o fluxo visual caso a carteira esteja vazia.
+     * * @return Um {@link JPanel} contendo as caixas de cartões empilhadas.
+     */
     private JPanel criarPainelLista() {
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setBackground(Color.WHITE);
@@ -134,6 +160,13 @@ public class TelaCarteira extends TelaMenu {
         return wrapper;
     }
 
+    /**
+     * Constrói individualmente o card interativo de um cartão utilizando o gerenciador {@link GridBagLayout}.
+     * Incorpora listeners dedicados para detecção de cliques e efeito visual reativo de Hover.
+     *
+     * @param c A instância de {@link Cartao} cujos dados estruturais preencherão o card.
+     * @return Um {@link JPanel} estilizado e interativo.
+     */
     private JPanel criarCardCartao(Cartao c) {
         JPanel card = new JPanel(new GridBagLayout());
         card.setBackground(Color.WHITE);
@@ -147,7 +180,6 @@ public class TelaCarteira extends TelaMenu {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.anchor = GridBagConstraints.WEST;
 
-        // Ícone decorativo baseado na bandeira
         JLabel lblIcon = new JLabel("💳");
         lblIcon.setFont(new Font("Arial", Font.PLAIN, 28));
         gbc.gridx = 0;
@@ -159,7 +191,6 @@ public class TelaCarteira extends TelaMenu {
         gbc.gridheight = 1;
         gbc.insets = new Insets(0, 0, 3, 0);
 
-        // Nome mascarado do cartão (Ex: **** **** **** 4521)
         JLabel lblNome = new JLabel("•••• •••• •••• " + c.getQuatroUltimosDigitos());
         lblNome.setFont(new Font("Arial", Font.BOLD, 15));
         gbc.gridx = 1;
@@ -168,7 +199,6 @@ public class TelaCarteira extends TelaMenu {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         card.add(lblNome, gbc);
 
-        // Badge de principal ou tipo
         if (c.isPrincipal()) {
             JLabel lblStatus = new JLabel("● Principal");
             lblStatus.setFont(new Font("Arial", Font.BOLD, 12));
@@ -212,6 +242,10 @@ public class TelaCarteira extends TelaMenu {
         return card;
     }
 
+    /**
+     * Fabrica o painel explicativo inicial que instrui o usuário a selecionar ou criar um item.
+     * * @return Um {@link JPanel} centralizado com textos informativos em HTML.
+     */
     private JPanel criarPainelDetalhePlaceholder() {
         JPanel p = new JPanel(new GridBagLayout());
         p.setBackground(COR_CINZA_BG);
@@ -229,9 +263,13 @@ public class TelaCarteira extends TelaMenu {
         return p;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  PAINEL DE DETALHE DO CARTÃO SELECIONADO
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Instancia o bloco descritivo detalhado exibindo as credenciais estruturadas do cartão selecionado.
+     * Anexa em sua base as operações reativas de exclusão e definição de prioridade de cobrança.
+     *
+     * @param c A entidade {@link Cartao} ativa cujas propriedades preencherão os rótulos.
+     * @return Um {@link JPanel} estruturado contendo as informações e os botões de controle.
+     */
     private JPanel criarPainelDetalhePreenchido(Cartao c) {
         JPanel painel = new JPanel();
         painel.setLayout(new BoxLayout(painel, BoxLayout.Y_AXIS));
@@ -248,7 +286,6 @@ public class TelaCarteira extends TelaMenu {
         painel.add(lblTitulo);
         painel.add(Box.createVerticalStrut(20));
 
-        // Seção Visual Simulando um Cartão Físico
         painel.add(criarSecao("💳  Dados do Método de Pagamento", new String[][]{
                 {"Bandeira", c.getBandeira().toUpperCase()},
                 {"Número", "•••• •••• •••• " + c.getQuatroUltimosDigitos()},
@@ -260,7 +297,6 @@ public class TelaCarteira extends TelaMenu {
         painel.add(Box.createVerticalGlue());
         painel.add(Box.createVerticalStrut(24));
 
-        // Botões de Ação na base do painel de detalhes
         JPanel btnRow = new JPanel(new GridLayout(1, 2, 12, 0));
         btnRow.setOpaque(false);
         btnRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
@@ -280,9 +316,12 @@ public class TelaCarteira extends TelaMenu {
         return painel;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  FORMULÁRIO PARA CADASTRAR NOVO CARTÃO
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Constrói o painel de formulário capturador interativo contendo os campos de entrada de texto.
+     * Vincula a lógica de submissão, verificação de obrigatoriedade de dados e persistência via back-end.
+     *
+     * @return Um {@link JPanel} estruturado com caixas de entrada de dados e gatilhos salvadores.
+     */
     private JPanel criarPainelFormularioCadastro() {
         JPanel painel = new JPanel();
         painel.setLayout(new BoxLayout(painel, BoxLayout.Y_AXIS));
@@ -299,7 +338,6 @@ public class TelaCarteira extends TelaMenu {
         painel.add(lblTitulo);
         painel.add(Box.createVerticalStrut(15));
 
-        // Campos do Formulário
         JTextField txtNumero = criarCampoTextoForm("Número do Cartão (16 dígitos)");
         JTextField txtTitular = criarCampoTextoForm("Nome Completo do Titular");
         JTextField txtValidade = criarCampoTextoForm("Validade (MM/AA)");
@@ -313,7 +351,6 @@ public class TelaCarteira extends TelaMenu {
         painel.add(txtTitular);
         painel.add(Box.createVerticalStrut(8));
 
-        // Linha dividida para Validade e CVV
         JPanel linhaDividida = new JPanel(new GridLayout(1, 2, 10, 0));
         linhaDividida.setOpaque(false);
         linhaDividida.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
@@ -339,7 +376,6 @@ public class TelaCarteira extends TelaMenu {
         painel.add(Box.createVerticalGlue());
         painel.add(Box.createVerticalStrut(20));
 
-        // Botões Salvar / Cancelar
         JPanel btnRow = new JPanel(new GridLayout(1, 2, 12, 0));
         btnRow.setOpaque(false);
         btnRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
@@ -357,7 +393,6 @@ public class TelaCarteira extends TelaMenu {
                 return;
             }
 
-            // Cria e adiciona o novo cartão na lista estática
             Cartao novo = new Cartao(num, tit, val, cvv, band, listaCartoesMemoria.isEmpty());
             novo.SalvarCartao();
             listaCartoesMemoria.add(novo);
@@ -376,6 +411,12 @@ public class TelaCarteira extends TelaMenu {
         return painel;
     }
 
+    /**
+     * Helper visual para a padronização e estilização de bordas internas dos campos do formulário.
+     *
+     * @param dica Texto auxiliar (Dica) que parametriza as propriedades iniciais do campo.
+     * @return Um componente operacional configurado do tipo {@link JTextField}.
+     */
     private JTextField criarCampoTextoForm(String dica) {
         JTextField f = new JTextField();
         f.setFont(new Font("Arial", Font.PLAIN, 14));
@@ -387,6 +428,13 @@ public class TelaCarteira extends TelaMenu {
         return f;
     }
 
+    /**
+     * Constrói sub-caixas estruturadas de listagem cinza para emparelhamento visual de pares chave/valor.
+     *
+     * @param titulo Rótulo superior descritivo do bloco analítico.
+     * @param pares  Matriz contendo as tuplas organizadas com o descritor e seu respectivo dado.
+     * @return Um {@link JPanel} contendo as linhas formatadas.
+     */
     private JPanel criarSecao(String titulo, String[][] pares) {
         JPanel s = new JPanel();
         s.setLayout(new BoxLayout(s, BoxLayout.Y_AXIS));
@@ -421,9 +469,12 @@ public class TelaCarteira extends TelaMenu {
         return s;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  AÇÕES DA TELA
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Atualiza dinamicamente o estado do lado direito injetando o painel de detalhes do cartão selecionado.
+     * Executa de forma acoplada o utilitário {@link RemoveEmoji} para assegurar a renderização de fontes nativas.
+     *
+     * @param c A entidade {@link Cartao} alvo da injeção visual.
+     */
     private void selecionarCartao(Cartao c) {
         cartaoSelecionado = c;
         corpoPrincipal.remove(painelDetalhe);
@@ -434,6 +485,9 @@ public class TelaCarteira extends TelaMenu {
         corpoPrincipal.repaint();
     }
 
+    /**
+     * Altera reativamente o escopo do lado direito para renderizar o formulário interativo de captura.
+     */
     private void exibirFormularioCadastro() {
         cartaoSelecionado = null;
         corpoPrincipal.remove(painelDetalhe);
@@ -444,6 +498,11 @@ public class TelaCarteira extends TelaMenu {
         corpoPrincipal.repaint();
     }
 
+    /**
+     * Percorre a lista local para alterar de forma lógica as permissões e definir o elemento principal da conta.
+     *
+     * @param alvo A entidade {@link Cartao} que receberá o destaque de cobrança padrão.
+     */
     private void definirComoPrincipal(Cartao alvo) {
         for (Cartao c : listaCartoesMemoria) {
             c.setPrincipal(c == alvo);
@@ -452,11 +511,15 @@ public class TelaCarteira extends TelaMenu {
         atualizarTela();
     }
 
+    /**
+     * Promove a exclusão lógica do objeto, reordenando as prioridades de faturamento padrão caso necessário.
+     *
+     * @param alvo O objeto {@link Cartao} a ser expelido da listagem.
+     */
     private void excluirCartao(Cartao alvo) {
         int r = JOptionPane.showConfirmDialog(this, "Deseja realmente remover este cartão?", "Excluir", JOptionPane.YES_NO_OPTION);
         if (r == JOptionPane.YES_OPTION) {
             listaCartoesMemoria.remove(alvo);
-            // Se removeu o principal e ainda restaram cartões, define o primeiro como principal
             if (alvo.isPrincipal() && !listaCartoesMemoria.isEmpty()) {
                 listaCartoesMemoria.get(0).setPrincipal(true);
             }
@@ -464,6 +527,9 @@ public class TelaCarteira extends TelaMenu {
         }
     }
 
+    /**
+     * Força a reconstrução estrutural completa do frame instanciando uma nova View para repintar os componentes.
+     */
     private void atualizarTela() {
         cartaoSelecionado = null;
         if (sist != null) {
@@ -471,14 +537,12 @@ public class TelaCarteira extends TelaMenu {
         }
     }
 
+    /**
+     * Faz a leitura do back-end para carregar os registros persistidos em cache no ciclo de vida da sessão.
+     */
     private void inicializarCartoes() {
         if(listaCartoesMemoria == null || listaCartoesMemoria.isEmpty()){
-            listaCartoesMemoria=Cartao.getCartoes();
+            listaCartoesMemoria = Cartao.getCartoes();
         }
-
     }
-
-    // ─────────────────────────────────────────────────────────
-    //  MODELO INTERNO DE CARTÃO DE CRÉDITO
-    // ─────────────────────────────────────────────────────────
 }

@@ -1,25 +1,29 @@
 package view;
 
 import util.RemoveEmoji;
-
 import model.Produto;
+import model.Restaurante;
+import model.Login;
+import bd.BancoDados;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
-import java.util.List;
-import bd.BancoDados;
-import model.Login;
 
+/**
+ * Interface gráfica responsável pela interação do gerente com o cardápio do restaurante.
+ * Permite listar, incluir, editar e remover pratos visualmente.
+ * * @author Arthur, Felipe, Davi
+ * @version 1.2
+ */
 public class TelaGerenciarRestaurante extends TelaMenu {
 
     private final Telabase sist;
-
     private JPanel corpoPrincipal;
     private JPanel painelDetalhe;
     private Produto pratoSelecionado;
-
-    private ArrayList<Produto> cardapio = new ArrayList<>();
+    private Restaurante restaurante;
 
     private static final Color COR_PRIMARIA   = new Color(234, 16, 34);
     private static final Color COR_VERDE      = new Color(46, 174, 82);
@@ -27,13 +31,33 @@ public class TelaGerenciarRestaurante extends TelaMenu {
     private static final Color COR_CINZA_BG   = new Color(245, 245, 245);
     private static final Color COR_BORDA      = new Color(230, 230, 230);
     private static final Color COR_CARD_HOVER = new Color(255, 242, 242);
-    private final String[] dadosRestaurante;
+
+    /**
+     * Construtor da tela de gerenciamento. Inicializa o modelo do restaurante
+     * focado no gerente logado e renderiza os componentes Swing.
+     * * @param sist Instância da janela base de navegação do sistema.
+     */
     public TelaGerenciarRestaurante(Telabase sist) {
         super(sist);
         this.sist = sist;
-        dadosRestaurante = BancoDados.buscarRestaurantePorGerente(Login.GetEmail());
 
-        setCardapio(); // troca por BancoDados.listarCardapio() quando o BD estiver integrado
+        String[] dadosRestaurante = BancoDados.buscarRestaurantePorGerente(Login.GetEmail());
+        if (dadosRestaurante != null && dadosRestaurante.length > 0) {
+            try {
+                int id = Integer.parseInt(dadosRestaurante[0]);
+                String nome = dadosRestaurante.length > 1 ? dadosRestaurante[1] : "";
+                String loc = dadosRestaurante.length > 2 ? dadosRestaurante[2] : "";
+                int est = dadosRestaurante.length > 3 ? Integer.parseInt(dadosRestaurante[3]) : 5;
+
+                this.restaurante = new Restaurante(id, nome, loc, est);
+                this.restaurante.carregarCardapio();
+            } catch (NumberFormatException e) {
+                System.err.println("Erro ao converter dados do restaurante: " + e.getMessage());
+                this.restaurante = new Restaurante();
+            }
+        } else {
+            this.restaurante = new Restaurante();
+        }
 
         JPanel container = new JPanel(new BorderLayout());
         container.setBackground(Color.WHITE);
@@ -56,9 +80,10 @@ public class TelaGerenciarRestaurante extends TelaMenu {
         setConteudoInterno(container);
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  CABEÇALHO
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Cria a secção superior da tela com o título, o botão de faturamento/comanda e inclusão.
+     * * @return JPanel contendo o cabeçalho formatado.
+     */
     private JPanel criarCabecalho() {
         JPanel p = new JPanel(new BorderLayout());
         p.setBackground(Color.WHITE);
@@ -67,7 +92,6 @@ public class TelaGerenciarRestaurante extends TelaMenu {
                 BorderFactory.createEmptyBorder(16, 30, 16, 30)
         ));
 
-        // Título + subtítulo em coluna
         JPanel titulos = new JPanel();
         titulos.setLayout(new BoxLayout(titulos, BoxLayout.Y_AXIS));
         titulos.setOpaque(false);
@@ -85,18 +109,117 @@ public class TelaGerenciarRestaurante extends TelaMenu {
 
         p.add(titulos, BorderLayout.WEST);
 
-        // Botão principal de ação (Emoji removido aqui)
+        // Subpainel horizontal para alinhar os múltiplos botões na direita
+        JPanel painelBotoes = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
+        painelBotoes.setOpaque(false);
+
+        // Novo botão: Consultar faturamento baseado em todos os pedidos feitos no Banco de Dados
+        BotaoArredondado btnFaturamento = new BotaoArredondado("📊 Ver Ganhos / Comanda", 20, COR_AMARELO, 14);
+        btnFaturamento.setPreferredSize(new Dimension(210, 42));
+        btnFaturamento.addActionListener(e -> {
+            if (restaurante == null || restaurante.getId() <= 0) {
+                JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(this),
+                        "Erro: Estabelecimento não identificado.", "Erro", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Busca todos os pedidos ativos/concluídos vinculados a este restaurante específico
+            ArrayList<model.Pedido> pedidos = BancoDados.obterPedidosPorRestaurante(restaurante.getId());
+            if(pedidos.isEmpty()){
+                System.out.println("Null");
+            }
+            double faturamentoTotal = 0;
+            int totalPedidos = pedidos.size();
+
+            // Loop para acumular dinamicamente o valor de cada pedido direto do banco de dados
+            // Procure por esta linha dentro do btnFaturamento na TelaGerenciarRestaurante:
+            for (model.Pedido ped : pedidos) {
+                System.out.println(ped);
+                faturamentoTotal += BancoDados.obterValorPedidoNoBanco(ped.getId());
+                System.out.println(faturamentoTotal);
+            }
+
+            double lucroLiquido = faturamentoTotal * 0.75; // Margem padrão estipulada de 75%
+
+            String msgRelatorio = String.format(
+                    "📈 Relatório de Desempenho Finaceiro\n\n" +
+                            "» Restaurante: %s\n" +
+                            "» Total de Pedidos Feitos: %d\n" +
+                            "» Faturamento Bruto Total: R$ %.2f\n" +
+                            "» Lucro Líquido Real (75%%): R$ %.2f\n\n" +
+                            "Deseja exportar a comanda impressa consolidada de fechamento corporativo?",
+                    restaurante.getNome(), totalPedidos, faturamentoTotal, lucroLiquido
+            );
+
+            int opcao = JOptionPane.showConfirmDialog(
+                    SwingUtilities.getWindowAncestor(this),
+                    msgRelatorio,
+                    "Balanço de Caixa",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+
+            if (opcao == JOptionPane.YES_OPTION) {
+                exportarComandaConsolidada(totalPedidos, faturamentoTotal, lucroLiquido);
+            }
+        });
+
+        // Botão padrão de inserção de itens
         BotaoArredondado btnAdd = new BotaoArredondado("Adicionar Prato", 20, COR_VERDE, 14);
         btnAdd.setPreferredSize(new Dimension(170, 42));
-        btnAdd.addActionListener(e -> abrirFormulario(null)); // null = modo criação
-        p.add(btnAdd, BorderLayout.EAST);
+        btnAdd.addActionListener(e -> abrirFormulario(null));
+
+        painelBotoes.add(btnFaturamento);
+        painelBotoes.add(btnAdd);
+
+        p.add(painelBotoes, BorderLayout.EAST);
 
         return p;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  PAINEL DE LISTA DE PRATOS
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Gera e salva um relatório físico agindo como a comanda geral de faturamento do estabelecimento.
+     * * @param totalPedidos Contagem de transações efetuadas.
+     * @param faturamento Valor financeiro bruto apurado.
+     * @param lucro Ganho líquido líquido calculado.
+     */
+    private void exportarComandaConsolidada(int totalPedidos, double faturamento, double lucro) {
+        String nomeArquivo = "comanda_geral_restaurante_" + restaurante.getId() + ".txt";
+
+        try (java.io.FileWriter writer = new java.io.FileWriter(nomeArquivo)) {
+            writer.write("==================================================\n");
+            writer.write("       SISTEMA DELIVERY - COMANDA DE FECHAMENTO   \n");
+            writer.write("==================================================\n");
+            writer.write(String.format("Restaurante: %-30s\n", restaurante.getNome()));
+            writer.write(String.format("Localização: %-30s\n", restaurante.getLocalizacao()));
+            writer.write("--------------------------------------------------\n");
+            writer.write(String.format("Volume de Pedidos:             %d transações\n", totalPedidos));
+            writer.write(String.format("Faturamento Bruto Acumulado:   R$ %10.2f\n", faturamento));
+            writer.write(String.format("Lucro Líquido Estimado (75%%):  R$ %10.2f\n", lucro));
+            writer.write("==================================================\n");
+            writer.write(" Emitido em: " + new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new java.util.Date()) + "\n");
+            writer.write("==================================================\n");
+
+            JOptionPane.showMessageDialog(
+                    SwingUtilities.getWindowAncestor(this),
+                    "Comanda geral exportada com sucesso!\nSalvo em seu diretório como: " + nomeArquivo,
+                    "Arquivo Salvo",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+        } catch (java.io.IOException ex) {
+            JOptionPane.showMessageDialog(
+                    SwingUtilities.getWindowAncestor(this),
+                    "Falha crítica ao gravar arquivo da comanda: " + ex.getMessage(),
+                    "Erro de Escrita",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
+    /**
+     * Constrói a listagem lateral esquerda com todos os pratos cadastrados.
+     * * @return JPanel estruturado com a lista de componentes em um scroll.
+     */
     private JPanel criarPainelLista() {
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setBackground(Color.WHITE);
@@ -112,7 +235,7 @@ public class TelaGerenciarRestaurante extends TelaMenu {
         lista.setBackground(Color.WHITE);
         lista.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
-        if (cardapio.isEmpty()) {
+        if (restaurante.getCardapio().isEmpty()) {
             JLabel vazio = new JLabel("Nenhum prato cadastrado. Clique em 'Adicionar Prato'.");
             vazio.setFont(new Font("Arial", Font.ITALIC, 13));
             vazio.setForeground(Color.GRAY);
@@ -120,7 +243,7 @@ public class TelaGerenciarRestaurante extends TelaMenu {
             lista.add(Box.createVerticalStrut(40));
             lista.add(vazio);
         } else {
-            for (Produto produto : cardapio) {
+            for (Produto produto : restaurante.getCardapio()) {
                 lista.add(criarCardProduto(produto));
                 lista.add(Box.createVerticalStrut(10));
             }
@@ -136,7 +259,11 @@ public class TelaGerenciarRestaurante extends TelaMenu {
         return wrapper;
     }
 
-    /** Card clicável para cada prato do cardápio */
+    /**
+     * Cria um painel individual clicável para representar visualmente um Produto.
+     * * @param produto O produto cujas informações serão exibidas.
+     * @return JPanel customizado agindo como cartão interativo.
+     */
     private JPanel criarCardProduto(Produto produto) {
         JPanel card = new JPanel(new GridBagLayout());
         card.setBackground(Color.WHITE);
@@ -150,7 +277,6 @@ public class TelaGerenciarRestaurante extends TelaMenu {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.anchor = GridBagConstraints.WEST;
 
-        // Ícone
         JLabel icone = new JLabel("🍽");
         icone.setFont(new Font("Arial", Font.PLAIN, 26));
         gbc.gridx = 0; gbc.gridy = 0; gbc.gridheight = 2;
@@ -160,14 +286,12 @@ public class TelaGerenciarRestaurante extends TelaMenu {
         gbc.gridheight = 1;
         gbc.insets = new Insets(0, 0, 3, 0);
 
-        // Nome do prato
         JLabel lblNome = new JLabel(produto.getNome());
         lblNome.setFont(new Font("Arial", Font.BOLD, 15));
         gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         card.add(lblNome, gbc);
 
-        // Preço badge
         JLabel lblPreco = new JLabel(String.format("R$ %.2f", produto.getPreco()));
         lblPreco.setFont(new Font("Arial", Font.BOLD, 14));
         lblPreco.setForeground(COR_VERDE);
@@ -176,7 +300,6 @@ public class TelaGerenciarRestaurante extends TelaMenu {
         gbc.insets = new Insets(0, 12, 3, 0);
         card.add(lblPreco, gbc);
 
-        // Linha de detalhe
         JLabel lblDetalhe = new JLabel("Clique para editar ou remover");
         lblDetalhe.setFont(new Font("Arial", Font.PLAIN, 12));
         lblDetalhe.setForeground(Color.GRAY);
@@ -185,7 +308,6 @@ public class TelaGerenciarRestaurante extends TelaMenu {
         gbc.insets = new Insets(0, 0, 0, 0);
         card.add(lblDetalhe, gbc);
 
-        // Hover + clique
         card.addMouseListener(new MouseAdapter() {
             @Override public void mouseEntered(MouseEvent e) { card.setBackground(COR_CARD_HOVER); }
             @Override public void mouseExited(MouseEvent e)  {
@@ -197,9 +319,10 @@ public class TelaGerenciarRestaurante extends TelaMenu {
         return card;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  PAINEL DIREITO — Placeholder
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Painel padrão exibido no lado direito enquanto nenhum item está selecionado.
+     * * @return JPanel com mensagem informativa centralizada.
+     */
     private JPanel criarPlaceholder() {
         JPanel p = new JPanel(new GridBagLayout());
         p.setBackground(COR_CINZA_BG);
@@ -217,9 +340,11 @@ public class TelaGerenciarRestaurante extends TelaMenu {
         return p;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  PAINEL DIREITO — Detalhe do prato selecionado
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Cria a visão detalhada de exibição e ações para um prato previamente selecionado.
+     * * @param produto O produto selecionado.
+     * @return JPanel formatado contendo os dados e os botões de controle.
+     */
     private JPanel criarPainelDetalhe(Produto produto) {
         JPanel painel = new JPanel();
         painel.setLayout(new BoxLayout(painel, BoxLayout.Y_AXIS));
@@ -236,14 +361,12 @@ public class TelaGerenciarRestaurante extends TelaMenu {
         painel.add(lblTitulo);
         painel.add(Box.createVerticalStrut(20));
 
-        // Card de resumo do prato
         painel.add(criarSecao("🍽  Informações do Prato", new String[][]{
                 {"Nome",  produto.getNome()},
                 {"Preço", String.format("R$ %.2f", produto.getPreco())}
         }));
         painel.add(Box.createVerticalStrut(24));
 
-        // Botões de ação: Editar e Remover
         JPanel btnRow = new JPanel(new GridLayout(1, 2, 12, 0));
         btnRow.setOpaque(false);
         btnRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
@@ -263,9 +386,11 @@ public class TelaGerenciarRestaurante extends TelaMenu {
         return painel;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  PAINEL DIREITO — Formulário Adicionar / Editar
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Monta o formulário de captura e validação de dados para cadastrar ou editar um produto.
+     * * @param produtoEdit O produto alvo de modificação, ou null caso seja uma nova inserção.
+     * @return JPanel contendo os inputs textuais formatados.
+     */
     private JPanel criarFormularioProduto(Produto produtoEdit) {
         boolean modoEdicao = (produtoEdit != null);
 
@@ -284,7 +409,6 @@ public class TelaGerenciarRestaurante extends TelaMenu {
         painel.add(lblTitulo);
         painel.add(Box.createVerticalStrut(20));
 
-        // Campos
         CampoTextoArredondado campoNomeProduto = new CampoTextoArredondado(20, 16, COR_BORDA, 15);
         CampoTextoArredondado campoPreco     = new CampoTextoArredondado(10, 16, COR_BORDA, 15);
 
@@ -298,21 +422,18 @@ public class TelaGerenciarRestaurante extends TelaMenu {
         painel.add(criarGrupoCampo("Preço (R$) *", campoPreco, "Ex: 29.90"));
         painel.add(Box.createVerticalStrut(28));
 
-        // Feedback
         JLabel lblFeedback = new JLabel(" ");
         lblFeedback.setFont(new Font("Arial", Font.BOLD, 13));
         lblFeedback.setAlignmentX(Component.LEFT_ALIGNMENT);
         painel.add(lblFeedback);
         painel.add(Box.createVerticalStrut(12));
 
-        // Botões Salvar + Cancelar
         JPanel btnRow = new JPanel(new GridLayout(1, 2, 12, 0));
         btnRow.setOpaque(false);
         btnRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
         btnRow.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         Color corSalvar = modoEdicao ? COR_AMARELO : COR_VERDE;
-        // Emoji removido aqui também
         String textoSalvar = modoEdicao ? "  Salvar Edição" : "Adicionar Prato";
         BotaoArredondado btnSalvar  = new BotaoArredondado(textoSalvar, 20, corSalvar, 14);
         BotaoArredondado btnCancelar = new BotaoArredondado("Cancelar", 20, new Color(160, 160, 160), 14);
@@ -338,28 +459,18 @@ public class TelaGerenciarRestaurante extends TelaMenu {
             }
 
             if (modoEdicao) {
-                // Edição: atualiza no modelo e no BD
-                produtoEdit.setNome(nome);
-                produtoEdit.setPreco(preco);
-                BancoDados.atualizarCardapio(produtoEdit.getCodigo(), nome, String.valueOf(preco)); // integrar quando BD estiver ok
-                lblFeedback.setText(RemoveEmoji.texto("✅  Produto atualizado!"));
+                restaurante.atualizarPrato(produtoEdit, nome, preco);
+                lblFeedback.setText(RemoveEmoji.texto("✅  Produto updated!"));
                 lblFeedback.setForeground(COR_VERDE);
             } else {
-
-                //int novoId = cardapio.isEmpty() ? 1 : cardapio.get(cardapio.size() - 1).getCodigo() + 1;
-                Produto novoProduto = new Produto(nome, preco);
-                cardapio.add(novoProduto);
-                try {
-                    String[] dados = BancoDados.buscarRestaurantePorGerente(Login.GetEmail());
-                    if (dados == null) {
-                        throw new NullPointerException("Restaurante não encontrado para o gerente atual.");
-                    }
-                    BancoDados.cadastrarCardapio(nome, String.valueOf(preco), dados[1], dados[2]); // integrar quando BD estiver ok
-                }catch(NullPointerException exception){
-                    System.out.println("Os daddos do cardapio estão null!");
+                boolean sucesso = restaurante.adicionarPrato(nome, preco);
+                if (sucesso) {
+                    lblFeedback.setText(RemoveEmoji.texto("✅  Produto adicionado!"));
+                    lblFeedback.setForeground(COR_VERDE);
+                } else {
+                    lblFeedback.setText(RemoveEmoji.texto("⚠  Erro ao salvar o produto no sistema."));
+                    lblFeedback.setForeground(COR_PRIMARIA);
                 }
-                lblFeedback.setText(RemoveEmoji.texto("✅  Produto adicionado!"));
-                lblFeedback.setForeground(COR_VERDE);
             }
 
             Timer t = new Timer(600, ev -> sist.configuraTela(new TelaGerenciarRestaurante(sist)));
@@ -377,9 +488,12 @@ public class TelaGerenciarRestaurante extends TelaMenu {
         return painel;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  HELPERS DE LAYOUT
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Auxiliar visual para montar uma secção estruturada de exibição de dados com linhas em grade.
+     * * @param titulo O título da secção.
+     * @param pares  Matriz contendo mapeamentos de Chave e Valor em texto.
+     * @return JPanel estilizado de resumo.
+     */
     private JPanel criarSecao(String titulo, String[][] pares) {
         JPanel s = new JPanel();
         s.setLayout(new BoxLayout(s, BoxLayout.Y_AXIS));
@@ -419,6 +533,13 @@ public class TelaGerenciarRestaurante extends TelaMenu {
         return s;
     }
 
+    /**
+     * Estrutura um grupo vertical padronizado contendo Label, Input e Dica auxiliar.
+     * * @param label Texto informativo do campo.
+     * @param campo Componente de input visual.
+     * @param hint  Dica complementar exibida abaixo do campo.
+     * @return JPanel contendo o agrupamento alinhado.
+     */
     private JPanel criarGrupoCampo(String label, JComponent campo, String hint) {
         JPanel g = new JPanel();
         g.setLayout(new BoxLayout(g, BoxLayout.Y_AXIS));
@@ -446,18 +567,27 @@ public class TelaGerenciarRestaurante extends TelaMenu {
         return g;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  LÓGICA
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Define o produto em foco e reconstrói o painel detalhado dinamicamente.
+     * * @param produto Produto selecionado pelo utilizador.
+     */
     private void selecionarProduto(Produto produto) {
         pratoSelecionado = produto;
         trocarPainelDetalhe(criarPainelDetalhe(produto));
     }
 
+    /**
+     * Alterna o painel de detalhes lateral pelo formulário ativo de edição ou criação.
+     * * @param produto O produto a editar, ou null para um novo formulário de criação.
+     */
     private void abrirFormulario(Produto produto) {
         trocarPainelDetalhe(criarFormularioProduto(produto));
     }
 
+    /**
+     * Exibe um diálogo de confirmação gráfica e delega a remoção do item ao modelo.
+     * * @param produto O produto a ser deletado definitivamente.
+     */
     private void confirmarRemocao(Produto produto) {
         int r = JOptionPane.showConfirmDialog(
                 SwingUtilities.getWindowAncestor(this),
@@ -465,13 +595,16 @@ public class TelaGerenciarRestaurante extends TelaMenu {
                 "Confirmar Remoção", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE
         );
         if (r == JOptionPane.YES_OPTION) {
-            cardapio.remove(produto);
-            BancoDados.removerPrato(produto.getCodigo()); // integrar quando BD estiver ok
+            restaurante.removerPrato(produto);
             sist.configuraTela(new TelaGerenciarRestaurante(sist));
         }
     }
 
-    /** Troca o painel direito sem recriar toda a tela */
+    /**
+     * Realiza a substituição dinâmica do componente do painel lateral direito
+     * aplicando limpeza reformatada.
+     * * @param novoPainel Novo painel Swing a ser renderizado na área lateral.
+     */
     private void trocarPainelDetalhe(JPanel novoPainel) {
         corpoPrincipal.remove(painelDetalhe);
         painelDetalhe = novoPainel;
@@ -480,26 +613,4 @@ public class TelaGerenciarRestaurante extends TelaMenu {
         corpoPrincipal.revalidate();
         corpoPrincipal.repaint();
     }
-
-    // ─────────────────────────────────────────────────────────
-    //  Settando cardapio
-    // ─────────────────────────────────────────────────────────
-    private void setCardapio() {
-
-        if (dadosRestaurante != null && dadosRestaurante.length > 0) {
-            try {
-                // Converte o ID que veio em String para int
-                int idRestaurante = Integer.parseInt(dadosRestaurante[0]);
-
-                // Busca o cardápio filtrado por esse ID
-                cardapio = BancoDados.getCardapioPorRestaurante(idRestaurante);
-            } catch (NumberFormatException e) {
-                System.err.println("Erro ao converter o ID do restaurante para número: " + e.getMessage());
-                cardapio = new ArrayList<>();
-            }
-        } else {
-            cardapio = new ArrayList<>();
-        }
-    }
-
 }

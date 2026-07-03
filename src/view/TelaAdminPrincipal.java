@@ -1,6 +1,7 @@
 package view;
 
 import bd.BancoDados;
+import model.Admin;
 import model.Login;
 
 import javax.swing.*;
@@ -11,22 +12,45 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Tela "Principal" do painel administrativo.
- * Mostra estatísticas gerais da plataforma (usuários, pedidos, faturamento)
- * e dá acesso à tela de Moderação de usuários.
+ * Interface gráfica (Dashboard Principal) destinada ao monitoramento e controle estatístico por administradores.
+ * <p>
+ * Apresenta indicadores consolidados de desempenho como contagem de usuários segmentados, total de pedidos e
+ * faturamento bruto global da plataforma. Oferece pontos de entrada para a tela de moderação avançada e para
+ * a emissão de relatórios consolidados em formato físico (.txt).
+ * </p>
+ * * @author Arthur, Felipe, Davi
+ * @version 1.2
  */
 public class TelaAdminPrincipal extends TelaMenu {
 
+    /** Cor vermelha corporativa adotada para realce de elementos informativos e títulos de alta relevância. */
     private static final Color COR_PRIMARIA = new Color(234, 16, 34);
+
+    /** Cor verde destinada à estilização de dados e valores monetários positivos (faturamento). */
     private static final Color COR_VERDE    = new Color(46, 174, 82);
+
+    /** Cor de borda clara para delimitação sutil dos painéis internos de estatísticas. */
     private static final Color COR_BORDA    = new Color(230, 230, 230);
+
+    /** Cor cinza neutra de fundo aplicada aos cards de exibição de dados numéricos (stats). */
     private static final Color COR_CINZA_BG = new Color(245, 245, 245);
 
+    /** Referência ao coordenador de navegação e troca de telas do sistema. */
     private final Telabase sist;
 
+    /** Instância ativa da classe de domínio do back-end para execução síncrona das operações administrativas. */
+    private final Admin adminCorporativo;
+
+    /**
+     * Construtor da janela principal do painel de administração.
+     * Inicializa os componentes visuais Swing e cria o objeto operacional {@link Admin} associado à sessão atual.
+     *
+     * @param sist O frame base de gerenciamento global de telas {@link Telabase}.
+     */
     public TelaAdminPrincipal(Telabase sist) {
         super(sist);
         this.sist = sist;
+        this.adminCorporativo = new Admin(Login.GetEmail(), "", Login.GetUser());
 
         JPanel container = new JPanel(new BorderLayout());
         container.setBackground(Color.WHITE);
@@ -50,6 +74,10 @@ public class TelaAdminPrincipal extends TelaMenu {
         setConteudoInterno(container);
     }
 
+    /**
+     * Fabrica o painel superior da tela, exibindo o título institucional e as credenciais do operador da sessão.
+     * @return Um {@link JPanel} estruturado contendo as etiquetas textuais identificadoras.
+     */
     private JPanel criarCabecalho() {
         JPanel p = new JPanel(new BorderLayout());
         p.setBackground(Color.WHITE);
@@ -77,15 +105,22 @@ public class TelaAdminPrincipal extends TelaMenu {
         return p;
     }
 
+    /**
+     * Mapeia de forma amigável a string crua do banco de dados para um rótulo formatado de exibição.
+     * @param tipo A string de permissão original ('admin' ou 'admin_master').
+     * @return O texto amigável legível para o usuário final.
+     */
     private String rotuloTipo(String tipo) {
         if ("admin_master".equals(tipo)) return "Admin Master";
         if ("admin".equals(tipo)) return "Admin";
         return tipo;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  STATS
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Compõe e agrupa as seções visuais contendo os cartões estatísticos de usuários e movimentação financeira.
+     * Consome as contagens por meio do objeto back-end {@link Admin}.
+     * @return Um {@link JPanel} contendo as malhas (grids) de contagem populadas.
+     */
     private JPanel criarSecaoStats() {
         JPanel secao = new JPanel();
         secao.setLayout(new BoxLayout(secao, BoxLayout.Y_AXIS));
@@ -96,7 +131,6 @@ public class TelaAdminPrincipal extends TelaMenu {
         titulo.setFont(new Font("Arial", Font.BOLD, 18));
         titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
         secao.add(titulo);
-        secao.add(Box.createVerticalStrut(4));
 
         JLabel sub1 = new JLabel("Usuários");
         sub1.setFont(new Font("Arial", Font.BOLD, 13));
@@ -110,10 +144,10 @@ public class TelaAdminPrincipal extends TelaMenu {
         linhaUsuarios.setOpaque(false);
         linhaUsuarios.setAlignmentX(Component.LEFT_ALIGNMENT);
         linhaUsuarios.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
-        linhaUsuarios.add(criarCardStat("Novos Clientes", String.valueOf(BancoDados.contarUsuariosPorTipo("cliente")), COR_PRIMARIA));
-        linhaUsuarios.add(criarCardStat("Novos Restaurantes", String.valueOf(BancoDados.contarTotalRestaurantesCadastrados()), COR_PRIMARIA));
-        linhaUsuarios.add(criarCardStat("Novos Entregadores", String.valueOf(BancoDados.contarUsuariosPorTipo("entregador")), COR_PRIMARIA));
-        linhaUsuarios.add(criarCardStat("Admins", String.valueOf(BancoDados.contarTotalAdmins()), COR_PRIMARIA));
+        linhaUsuarios.add(criarCardStat("Novos Clientes", String.valueOf(adminCorporativo.obterContagemClientes()), COR_PRIMARIA));
+        linhaUsuarios.add(criarCardStat("Novos Restaurantes", String.valueOf(adminCorporativo.obterContagemRestaurantes()), COR_PRIMARIA));
+        linhaUsuarios.add(criarCardStat("Novos Entregadores", String.valueOf(adminCorporativo.obterContagemEntregadores()), COR_PRIMARIA));
+        linhaUsuarios.add(criarCardStat("Admins", String.valueOf(adminCorporativo.obterContagemAdmins()), COR_PRIMARIA));
         secao.add(linhaUsuarios);
 
         JLabel sub2 = new JLabel("Pedidos");
@@ -128,13 +162,21 @@ public class TelaAdminPrincipal extends TelaMenu {
         linhaPedidos.setOpaque(false);
         linhaPedidos.setAlignmentX(Component.LEFT_ALIGNMENT);
         linhaPedidos.setMaximumSize(new Dimension(600, 90));
-        linhaPedidos.add(criarCardStat("Vendas (pedidos)", String.valueOf(BancoDados.contarTotalPedidos()), COR_VERDE));
-        linhaPedidos.add(criarCardStat("Faturamento", String.format("R$ %.2f", BancoDados.calcularFaturamentoTotal()), COR_VERDE));
+        linhaPedidos.add(criarCardStat("Vendas (pedidos)", String.valueOf(adminCorporativo.obterTotalPedidos()), COR_VERDE));
+        linhaPedidos.add(criarCardStat("Faturamento", String.format("R$ %.2f", adminCorporativo.obterFaturamentoTotal()), COR_VERDE));
         secao.add(linhaPedidos);
 
         return secao;
     }
 
+    /**
+     * Helper visual para a construção padronizada de um card individual de métricas (caixa cinza).
+     *
+     * @param rotulo   O descritivo do dado monitorado.
+     * @param valor    O dado numérico convertido em formato de String.
+     * @param corValor A tonalidade cromática a ser aplicada no texto do valor principal.
+     * @return Um container estruturado contendo o card formatado.
+     */
     private JPanel criarCardStat(String rotulo, String valor, Color corValor) {
         JPanel card = new JPanel();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
@@ -157,9 +199,10 @@ public class TelaAdminPrincipal extends TelaMenu {
         return card;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  AÇÕES
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Desenha a área de botões operacionais da tela (redirecionamento de moderação e exportação).
+     * @return Um {@link JPanel} contendo as ações engatadas.
+     */
     private JPanel criarSecaoAcoes() {
         JPanel secao = new JPanel();
         secao.setLayout(new BoxLayout(secao, BoxLayout.Y_AXIS));
@@ -190,7 +233,10 @@ public class TelaAdminPrincipal extends TelaMenu {
         return secao;
     }
 
-    /** Gera um relatório .txt simples com as estatísticas atuais, deixando o usuário escolher onde salvar. */
+    /**
+     * Aciona um diálogo seletor de arquivos físico, compila as estatísticas recuperadas do
+     * back-end ativo e realiza a escrita persistente de um relatório analítico textual (.txt).
+     */
     private void gerarRelatorio() {
         JFileChooser chooser = new JFileChooser();
         chooser.setDialogTitle("Escolher local para salvar o relatório");
@@ -207,13 +253,13 @@ public class TelaAdminPrincipal extends TelaMenu {
         sb.append("Gerado por: ").append(Login.GetUser()).append(" (").append(rotuloTipo(Login.GetTipo())).append(")\n");
         sb.append("----------------------------------------\n\n");
         sb.append("USUÁRIOS\n");
-        sb.append("  Clientes:      ").append(BancoDados.contarUsuariosPorTipo("cliente")).append("\n");
-        sb.append("  Restaurantes:  ").append(BancoDados.contarTotalRestaurantesCadastrados()).append("\n");
-        sb.append("  Entregadores:  ").append(BancoDados.contarUsuariosPorTipo("entregador")).append("\n");
-        sb.append("  Admins:        ").append(BancoDados.contarTotalAdmins()).append("\n\n");
+        sb.append("  Clientes:      ").append(adminCorporativo.obterContagemClientes()).append("\n");
+        sb.append("  Restaurantes:  ").append(adminCorporativo.obterContagemRestaurantes()).append("\n");
+        sb.append("  Entregadores:  ").append(adminCorporativo.obterContagemEntregadores()).append("\n");
+        sb.append("  Admins:        ").append(adminCorporativo.obterContagemAdmins()).append("\n\n");
         sb.append("PEDIDOS\n");
-        sb.append("  Total de pedidos: ").append(BancoDados.contarTotalPedidos()).append("\n");
-        sb.append(String.format("  Faturamento total: R$ %.2f%n", BancoDados.calcularFaturamentoTotal()));
+        sb.append("  Total de pedidos: ").append(adminCorporativo.obterTotalPedidos()).append("\n");
+        sb.append(String.format("  Faturamento total: R$ %.2f%n", adminCorporativo.obterFaturamentoTotal()));
 
         try (FileWriter fw = new FileWriter(arquivo)) {
             fw.write(sb.toString());

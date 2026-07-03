@@ -3,7 +3,7 @@ package view;
 import model.Produto;
 import util.RemoveEmoji;
 import model.Pedido;
-import bd.BancoDados; // IMPORTANTE: Apontando para o pacote correto do banco
+import bd.BancoDados;
 
 import javax.swing.*;
 import java.awt.*;
@@ -12,55 +12,98 @@ import java.util.List;
 import java.util.ArrayList;
 
 /**
- * TelaPedidosRestaurante — Pedidos recebidos pelo restaurante conectados ao Banco de Dados.
+ * Interface gráfica (View) destinada ao gerenciamento e monitoramento do fluxo
+ * de pedidos recebidos em tempo real por um restaurante parceiro.
+ * <p>
+ * O painel divide-se em uma listagem cronológica de pedidos à esquerda (com suporte
+ * a filtragem por abas) e uma seção detalhada à direita para acompanhamento do status.
+ * Interage diretamente com a fachada de persistência {@link BancoDados}, permitindo
+ * que o gerente transicione o estado de produção dos itens de forma reativa.
+ * </p>
+ * * @author Arthur, Felipe, Davi
+ * @version 1.2
  */
 public class TelaPedidosRestaurante extends TelaMenu {
 
+    /** Instância ativa do frame de coordenação global de telas. */
     private final Telabase sist;
 
+    /** Contêiner estrutural central encarregado de organizar as colunas de dados. */
     private JPanel corpoPrincipal;
+
+    /** Painel reativo lateral direito focado na renderização do faturamento e dados do cliente. */
     private JPanel painelDetalhe;
+
+    /** Referência do objeto {@link Pedido} atualmente inspecionado e selecionado pelo usuário. */
     private Pedido pedidoSelecionado;
 
-    // ── Estados restaurante ───────────────────────────────────
+    /** Código de estado lógico para um pedido recém-submetido pelo cliente. */
     static final int ESTADO_RECEBIDO   = 1;
+
+    /** Código de estado lógico para um pedido aceito em fase de preparação na cozinha. */
     static final int ESTADO_PRODUCAO   = 2;
+
+    /** Código de estado lógico indicando conclusão da cozinha e aguardo de retirada pelo entregador. */
     static final int ESTADO_PRONTO     = 3;
+
+    /** Código de estado lógico atribuído quando o item é coletado e despachado em trânsito. */
     static final int ESTADO_EM_ROTA    = 4;
+
+    /** Código de estado lógico finalizador do ciclo de faturamento. */
     static final int ESTADO_FINALIZADO = 5;
 
+    /** Vetor indexado de Strings utilizado para a rotulagem legível dos estados na interface. */
     private static final String[] LABEL_ESTADO = {
             "", "Recebido", "Em Produção", "Pronto p/ Entrega", "Em Rota", "Entregue"
     };
+
+    /** Paleta de cores de fundo específicas (badges) associadas ao estado lógico correspondente. */
     private static final Color[] BG_ESTADO = {
             Color.GRAY,
-            new Color(255, 243, 205),   // amarelo suave
-            new Color(219, 234, 254),   // azul suave
-            new Color(209, 250, 229),   // verde suave
-            new Color(255, 228, 230),   // rosa suave (em rota)
-            new Color(243, 244, 246)    // cinza
-    };
-    private static final Color[] FG_ESTADO = {
-            Color.GRAY,
-            new Color(133, 100,   4),   // amarelo escuro
-            new Color( 29,  78, 216),   // azul escuro
-            new Color( 21,  87,  36),   // verde escuro
-            new Color(234,  16,  34),   // vermelho (em rota)
-            new Color( 80,  80,  80)    // cinza
+            new Color(255, 243, 205),
+            new Color(219, 234, 254),
+            new Color(209, 250, 229),
+            new Color(255, 228, 230),
+            new Color(243, 244, 246)
     };
 
+    /** Matiz tipográfica de realce de contraste de texto vinculada a cada badge de status. */
+    private static final Color[] FG_ESTADO = {
+            Color.GRAY,
+            new Color(133, 100,   4),
+            new Color( 29,  78, 216),
+            new Color( 21,  87,  36),
+            new Color(234,  16,  34),
+            new Color( 80,  80,  80)
+    };
+
+    /** Vetor de mascaramento para emoticons ou ícones customizados de status (Reservado). */
     private static final String[] ICON_ESTADO = {
             "", "", "", "", "", ""
     };
 
+    /** Cor vermelha corporativa aplicada em botões de destaque, cancelamento e títulos secundários. */
     private static final Color COR_PRIMARIA   = new Color(234, 16, 34);
+
+    /** Tonalidade verde para confirmações e estados de conclusão física de tarefas. */
     private static final Color COR_VERDE      = new Color(46, 174, 82);
+
+    /** Tonalidade azul utilizada para gatilhos de avanço de fluxo ou aceite operacional. */
     private static final Color COR_AZUL       = new Color(29, 78, 216);
+
+    /** Cor cinza neutra para panos de fundo de contêineres e placeholders informativos. */
     private static final Color COR_CINZA_BG   = new Color(245, 245, 245);
+
+    /** Cor sutil e padronizada para pintura de contornos e divisórias de componentes. */
     private static final Color COR_BORDA      = new Color(230, 230, 230);
+
+    /** Cor sutil de fundo ativada na passagem do cursor do mouse sobre os cartões (Hover). */
     private static final Color COR_CARD_HOVER = new Color(255, 242, 242);
 
-    /** Descobre o ID do restaurante gerenciado pelo usuário logado (ou -1 se não encontrado). */
+    /**
+     * Recupera o identificador numérico primário do restaurante atrelado ao e-mail do gerente logado.
+     * * * @return O ID do restaurante mapeado no banco, ou {@code -1} se houver falhas de parse ou ausência.
+     */
     private static int idRestauranteAtual() {
         String[] dados = bd.BancoDados.buscarRestaurantePorGerente(Telabase.getLogin().GetEmail());
         if (dados == null || dados.length == 0) return -1;
@@ -71,12 +114,25 @@ public class TelaPedidosRestaurante extends TelaMenu {
         }
     }
 
+    /**
+     * Consome a API de dados para obter a listagem de pedidos vinculados ao restaurante ativo.
+     * * * @return Uma coleção {@link List} contendo os pedidos interceptados, ou uma lista vazia caso não encontre o ID.
+     */
     private static List<Pedido> pedidosDoRestaurante() {
         int idRest = idRestauranteAtual();
         if (idRest == -1) return new ArrayList<>();
         return bd.BancoDados.obterPedidosPorRestaurante(idRest);
     }
 
+    /**
+     * Construtor da tela de gerenciamento de pedidos do restaurante.
+     * <p>
+     * Monta o esqueleto do cabeçalho de estatísticas, divide espacialmente a tela em duas colunas centrais,
+     * injeta o painel de listagem e define o placeholder inicial da direita.
+     * </p>
+     *
+     * @param sist O frame base de gerenciamento global de telas {@link Telabase}.
+     */
     public TelaPedidosRestaurante(Telabase sist) {
         super(sist);
         this.sist = sist;
@@ -102,9 +158,11 @@ public class TelaPedidosRestaurante extends TelaMenu {
         setConteudoInterno(container);
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  CABEÇALHO
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Cria e preenche a barra superior informativa da interface.
+     * Computa via streams o balanço de pedidos em andamento/novos para atualização das métricas do painel.
+     * * * @return Um {@link JPanel} estruturado contendo textos e botão de refresh.
+     */
     private JPanel criarCabecalho() {
         JPanel p = new JPanel(new BorderLayout());
         p.setBackground(Color.WHITE);
@@ -122,7 +180,6 @@ public class TelaPedidosRestaurante extends TelaMenu {
         titulo.setForeground(new Color(30, 30, 30));
         titulos.add(titulo);
 
-        // ALTERADO: Estatísticas vindas em tempo real do banco de dados
         List<Pedido> totalPedidos = pedidosDoRestaurante();
         long emProducao = totalPedidos.stream().filter(pd -> pd.getEstado() == ESTADO_PRODUCAO).count();
         long recebidos  = totalPedidos.stream().filter(pd -> pd.getEstado() == ESTADO_RECEBIDO).count();
@@ -142,9 +199,11 @@ public class TelaPedidosRestaurante extends TelaMenu {
         return p;
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  PAINEL DA LISTA
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Cria a seção de listagem empilhada de pedidos da coluna esquerda.
+     * Ordena os elementos jogando os finalizados para a base e estruturando os cards ativos no topo.
+     * * * @return Um {@link JPanel} encapsulado em uma barra de rolagem contendo os cards.
+     */
     private JPanel criarPainelLista() {
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setBackground(Color.WHITE);
@@ -167,7 +226,6 @@ public class TelaPedidosRestaurante extends TelaMenu {
         lista.setBackground(Color.WHITE);
         lista.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
-        // ALTERADO: Carregando dados atualizados do banco
         List<Pedido> pedidos = pedidosDoRestaurante();
         pedidos.sort((a, b) -> {
             int ea = safeEstado(a), eb = safeEstado(b);
@@ -199,6 +257,12 @@ public class TelaPedidosRestaurante extends TelaMenu {
         return wrapper;
     }
 
+    /**
+     * Fabrica e customiza o componente visual individualizado (Card) que resume os dados básicos de um pedido.
+     * Concatena os nomes dos produtos e amarra listeners de mouse para clique e seleção.
+     * * * @param pd A instância de {@link Pedido} que alimentará o componente gráfico.
+     * @return O painel configurado em {@link GridBagLayout}.
+     */
     private JPanel criarCardPedido(Pedido pd) {
         JPanel card = new JPanel(new GridBagLayout());
         card.setBackground(Color.WHITE);
@@ -222,7 +286,6 @@ public class TelaPedidosRestaurante extends TelaMenu {
         gbc.gridheight = 1;
         gbc.insets = new Insets(0, 0, 3, 0);
 
-        // ALTERADO: Agrupa os nomes das comidas da lista (ArrayList)
         StringBuilder nomesComidas = new StringBuilder();
         for (Produto prod : pd.getComidas()) {
             if (nomesComidas.length() > 0) nomesComidas.append(", ");
@@ -245,7 +308,6 @@ public class TelaPedidosRestaurante extends TelaMenu {
         gbc.fill = GridBagConstraints.NONE;
         card.add(badge, gbc);
 
-        // ALTERADO: Chamando getNome() do cliente conforme especificado
         String clienteNome = pd.getCliente() != null ? pd.getCliente().getNome() : "Cliente";
         String hora        = pd.getHora_Entregue() != null ? pd.getHora_Entregue() : "Imediato";
 
@@ -267,6 +329,10 @@ public class TelaPedidosRestaurante extends TelaMenu {
         return card;
     }
 
+    /**
+     * Instancia o componente neutro (Placeholder) da coluna da direita antes de qualquer seleção.
+     * * * @return O painel contendo a mensagem de instrução textual.
+     */
     private JPanel criarPlaceholder() {
         JPanel p = new JPanel(new GridBagLayout());
         p.setBackground(COR_CINZA_BG);
@@ -284,6 +350,12 @@ public class TelaPedidosRestaurante extends TelaMenu {
         return p;
     }
 
+    /**
+     * Gera dinamicamente o formulário estendido e detalhado de um pedido previamente selecionado.
+     * Mapeia informações do cliente, método de cobrança e alinha as ações de produção.
+     * * * @param pd O {@link Pedido} em foco.
+     * @return O painel estruturado preenchido.
+     */
     private JPanel criarPainelDetalhe(Pedido pd) {
         JPanel painel = new JPanel();
         painel.setLayout(new BoxLayout(painel, BoxLayout.Y_AXIS));
@@ -309,7 +381,6 @@ public class TelaPedidosRestaurante extends TelaMenu {
         painel.add(badge);
         painel.add(Box.createVerticalStrut(20));
 
-        // ALTERADO: Agrupa strings de pratos para a seção resumida de detalhes
         StringBuilder listaItens = new StringBuilder();
         for (Produto prod : pd.getComidas()) {
             if (listaItens.length() > 0) listaItens.append(", ");
@@ -323,7 +394,6 @@ public class TelaPedidosRestaurante extends TelaMenu {
         }));
         painel.add(Box.createVerticalStrut(14));
 
-        // ALTERADO: Chamando getNome() do cliente
         String nomeCliente = pd.getCliente() != null ? pd.getCliente().getNome() : "Não informado";
         painel.add(criarSecao("Cliente", new String[][]{
                 {"Nome",       nomeCliente},
@@ -340,6 +410,11 @@ public class TelaPedidosRestaurante extends TelaMenu {
         return painel;
     }
 
+    /**
+     * Avalia o status atual do pedido para gerar os botões corretos de ação e transição de workflow.
+     * * * @param pd O {@link Pedido} inspecionado.
+     * @return Um painel contendo botões, ou mensagens textuais informativas de fluxo.
+     */
     private JPanel criarBotoesAcao(Pedido pd) {
         JPanel area = new JPanel();
         area.setLayout(new BoxLayout(area, BoxLayout.Y_AXIS));
@@ -390,6 +465,12 @@ public class TelaPedidosRestaurante extends TelaMenu {
         return area;
     }
 
+    /**
+     * Fabrica uma subseção visual formatada em pares de chave/valor para exibição limpa de metadados.
+     * * * @param titulo O título da seção (ex: "Cliente").
+     * @param pares  Matriz bi-dimensional de Strings contendo as linhas formatadas.
+     * @return O painel contendo o layout da seção.
+     */
     private JPanel criarSecao(String titulo, String[][] pares) {
         JPanel s = new JPanel();
         s.setLayout(new BoxLayout(s, BoxLayout.Y_AXIS));
@@ -427,6 +508,10 @@ public class TelaPedidosRestaurante extends TelaMenu {
         return s;
     }
 
+    /**
+     * Substitui o contêiner detalhado atual e reconstrói a seção à direita com base no pedido focado.
+     * * * @param pd O objeto {@link Pedido} selecionado para inspeção.
+     */
     private void selecionarPedido(Pedido pd) {
         pedidoSelecionado = pd;
         corpoPrincipal.remove(painelDetalhe);
@@ -437,11 +522,13 @@ public class TelaPedidosRestaurante extends TelaMenu {
         corpoPrincipal.repaint();
     }
 
-    // ─────────────────────────────────────────────────────────
-    //  LÓGICA ALTERADA PARA INTERAGIR COM O BANCO DE DADOS (bd)
-    // ─────────────────────────────────────────────────────────
+    /**
+     * Dispara a alteração persistente de status de um pedido diretamente na base de dados.
+     * Exibe avisos dialogados de confirmação ao usuário e força a atualização da árvore de visualização.
+     * * * @param pd          A instância de {@link Pedido} afetada.
+     * @param novoEstado O inteiro do novo estado lógico de destino.
+     */
     private void mudarEstado(Pedido pd, int novoEstado) {
-        // ALTERADO: Atualiza o status do pedido de forma persistente no banco de dados, pelo ID do pedido
         boolean sucesso = bd.BancoDados.atualizarEstadoPedido(pd.getId(), novoEstado);
 
         if (sucesso) {
@@ -456,13 +543,16 @@ public class TelaPedidosRestaurante extends TelaMenu {
         }
     }
 
+    /**
+     * Remove ou cancela permanentemente o registro de um pedido na base de dados após confirmação por modal.
+     * * * @param pd O {@link Pedido} a ser deletado/recusado.
+     */
     private void recusarPedido(Pedido pd) {
         int r = JOptionPane.showConfirmDialog(this,
                 "Tem certeza que deseja recusar este pedido?\nO cliente será notificado.",
                 "Recusar Pedido", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 
         if (r == JOptionPane.YES_OPTION) {
-            // ALTERADO: Remove o pedido do banco pelo seu ID
             boolean sucesso = bd.BancoDados.cancelarPedidoNoBanco(pd.getId());
             if (sucesso) {
                 atualizarTela();
@@ -472,11 +562,20 @@ public class TelaPedidosRestaurante extends TelaMenu {
         }
     }
 
+    /**
+     * Normaliza e valida o estado inteiro embutido no pedido para evitar estouros de índice em vetores.
+     * * * @param pd O {@link Pedido} a ser validado.
+     * @return Um número inteiro seguro limitado estritamente entre 1 e 5.
+     */
     private int safeEstado(Pedido pd) {
-        int e = pd.getEstado(); // Coleta o estado numérico padrão unificado
+        int e = pd.getEstado();
         return Math.max(1, Math.min(e, 5));
     }
 
+    /**
+     * Realiza a reconstrução estrutural completa da janela, forçando uma nova instância
+     * limpa a consumir os dados atualizados do banco de dados.
+     */
     private void atualizarTela() {
         pedidoSelecionado = null;
         if (sist != null) {
