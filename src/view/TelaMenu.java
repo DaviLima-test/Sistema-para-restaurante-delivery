@@ -5,6 +5,7 @@ import model.Login;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.Objects;
 
 /**
  * Superclasse abstrata estrutural (Template View) que estabelece a identidade visual comum
@@ -126,7 +127,7 @@ public abstract class TelaMenu extends JPanel {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(0, 20, 0, 20);
 
-        ImageIcon inc_hambuger = new ImageIcon("img/hambuger_icon.png");
+        ImageIcon inc_hambuger = new ImageIcon(Objects.requireNonNull(getClass().getClassLoader().getResource("img/hambuger_icon.png")));
         Image novaImg = inc_hambuger.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
 
         JButton bnt_hambuger = new JButton(new ImageIcon(novaImg));

@@ -5,6 +5,7 @@ import bd.BancoDados;
 import model.Login;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.util.Objects;
 
 /**
  * Interface gráfica (View) responsável pela captura, validação e persistência do
@@ -71,7 +72,7 @@ public class TelaCadastro extends JPanel {
         paneldir = new PainelFormulario(Telabase.Width/2, Telabase.Height, Color.WHITE);
         this.setBackground(Color.decode("#e96769"));
         panelesq.setBackground(Color.decode("#e96769"));
-        ImageIcon banner = new ImageIcon("img/banner_delivery.jpg");
+        ImageIcon banner = new ImageIcon(Objects.requireNonNull(getClass().getClassLoader().getResource("img/banner_delivery.jpg")));
 
         // Redimensionamento estático da imagem de apresentação
         Image novaImg = banner.getImage().getScaledInstance(
@@ -220,13 +221,14 @@ public class TelaCadastro extends JPanel {
                         "\nTipo:" + str_tipo +
                         "\nLocalizacao" + str_localizacao);
 
-                // Acionamento da persistência de dados no back-end
-                BancoDados.cadastrarUsuario(str_usuario, str_email, str_senha, str_tipo, str_localizacao);
 
-                Telabase sist = (Telabase) SwingUtilities.getWindowAncestor(this);
-                if(sist != null) {
-                    TelaPrincipal tl = new TelaPrincipal(sist);
-                    sist.configuraTela(tl);
+                if(BancoDados.cadastrarUsuario(str_usuario, str_email, str_senha, str_tipo, str_localizacao)) {
+
+                    Telabase sist = (Telabase) SwingUtilities.getWindowAncestor(this);
+                    if (sist != null) {
+                        TelaPrincipal tl = new TelaPrincipal(sist);
+                        sist.configuraTela(tl);
+                    }
                 }
             }
         });

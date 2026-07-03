@@ -6,6 +6,7 @@ import bd.BancoDados;
 import model.Login;
 
 import java.awt.*;
+import java.util.Objects;
 
 /**
  * Interface gráfica (View) responsável pela autenticação e controle de acesso ao sistema.
@@ -64,7 +65,7 @@ public class TelaLogin extends JPanel {
         this.setBackground(Color.decode("#e96769"));
         panelesq.setBackground(Color.decode("#e96769"));
 
-        ImageIcon banner = new ImageIcon("img/banner_delivery.jpg");
+        ImageIcon banner = new ImageIcon(Objects.requireNonNull(getClass().getClassLoader().getResource("img/banner_delivery.jpg")));
         Image novaImg = banner.getImage().getScaledInstance(
                 Telabase.Width / 2,
                 Telabase.Height,
