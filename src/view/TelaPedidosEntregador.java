@@ -91,7 +91,7 @@ public class TelaPedidosEntregador extends TelaMenu {
         btnGanhos.setPreferredSize(new Dimension(150, 38));
         btnGanhos.addActionListener(e -> calcularEExibirGanhos());
 
-        BotaoArredondado btnAtualizar = new BotaoArredondado("↻  Atualizar", 20, COR_PRIMARIA, 14);
+        BotaoArredondado btnAtualizar = new BotaoArredondado("  Atualizar", 20, COR_PRIMARIA, 14);
         btnAtualizar.setPreferredSize(new Dimension(130, 38));
         btnAtualizar.addActionListener(e -> atualizarTela());
 

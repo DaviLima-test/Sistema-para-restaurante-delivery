@@ -21,7 +21,7 @@ import java.util.ArrayList;
  * que o gerente transicione o estado de produção dos itens de forma reativa.
  * </p>
  * * @author Arthur, Felipe, Davi
- * @version 1.2
+ * @version 1.3
  */
 public class TelaPedidosRestaurante extends TelaMenu {
 
@@ -36,6 +36,18 @@ public class TelaPedidosRestaurante extends TelaMenu {
 
     /** Referência do objeto {@link Pedido} atualmente inspecionado e selecionado pelo usuário. */
     private Pedido pedidoSelecionado;
+
+    /** O critério de filtro textual selecionado atualmente para segregar a exibição dos pedidos na lista. */
+    private String filtroAtual = "Todos";
+
+    /** Contêiner de fluxo horizontal que abriga e gerencia os botões mutáveis de abas. */
+    private JPanel painelTabs;
+
+    /** Painel vertical interno encarregado do empilhamento e renderização dinâmica dos cartões filtrados. */
+    private JPanel painelListaCards;
+
+    /** Rótulo informativo do subcabeçalho atualizado dinamicamente com os quantitativos globais. */
+    private JLabel subHeaderStats;
 
     /** Código de estado lógico para um pedido recém-submetido pelo cliente. */
     static final int ESTADO_RECEBIDO   = 1;
@@ -180,14 +192,12 @@ public class TelaPedidosRestaurante extends TelaMenu {
         titulo.setForeground(new Color(30, 30, 30));
         titulos.add(titulo);
 
-        List<Pedido> totalPedidos = pedidosDoRestaurante();
-        long emProducao = totalPedidos.stream().filter(pd -> pd.getEstado() == ESTADO_PRODUCAO).count();
-        long recebidos  = totalPedidos.stream().filter(pd -> pd.getEstado() == ESTADO_RECEBIDO).count();
+        subHeaderStats = new JLabel();
+        subHeaderStats.setFont(new Font("Arial", Font.PLAIN, 13));
+        subHeaderStats.setForeground(Color.GRAY);
+        titulos.add(subHeaderStats);
 
-        JLabel sub = new JLabel(recebidos + " novos  •  " + emProducao + " em produção");
-        sub.setFont(new Font("Arial", Font.PLAIN, 13));
-        sub.setForeground(Color.GRAY);
-        titulos.add(sub);
+        atualizarStatsCabecalho();
 
         p.add(titulos, BorderLayout.WEST);
 
@@ -200,61 +210,106 @@ public class TelaPedidosRestaurante extends TelaMenu {
     }
 
     /**
+     * Atualiza as métricas numéricas exibidas no subcabeçalho com base no estado atual da base de dados.
+     */
+    private void atualizarStatsCabecalho() {
+        List<Pedido> totalPedidos = pedidosDoRestaurante();
+        long emProducao = totalPedidos.stream().filter(pd -> pd.getEstado() == ESTADO_PRODUCAO).count();
+        long recebidos  = totalPedidos.stream().filter(pd -> pd.getEstado() == ESTADO_RECEBIDO).count();
+        subHeaderStats.setText(recebidos + " novos  •  " + emProducao + " em produção");
+    }
+
+    /**
      * Cria a seção de listagem empilhada de pedidos da coluna esquerda.
-     * Ordena os elementos jogando os finalizados para a base e estruturando os cards ativos no topo.
-     * * * @return Um {@link JPanel} encapsulado em uma barra de rolagem contendo os cards.
+     * Instancia as estruturas dos contêineres vazios e aciona a primeira renderização dos cards.
+     * * * @return Um {@link JPanel} encapsulado em uma barra de rolagem contendo as estruturas das abas.
      */
     private JPanel criarPainelLista() {
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setBackground(Color.WHITE);
 
-        JPanel tabs = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-        tabs.setOpaque(false);
-        tabs.setBorder(BorderFactory.createEmptyBorder(0, 0, 12, 0));
+        painelTabs = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        painelTabs.setOpaque(false);
+        painelTabs.setBorder(BorderFactory.createEmptyBorder(0, 0, 12, 0));
+        wrapper.add(painelTabs, BorderLayout.NORTH);
 
+        painelListaCards = new JPanel();
+        painelListaCards.setLayout(new BoxLayout(painelListaCards, BoxLayout.Y_AXIS));
+        painelListaCards.setBackground(Color.WHITE);
+        painelListaCards.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+
+        JScrollPane scrollLista = new JScrollPane(painelListaCards);
+        scrollLista.setBorder(BorderFactory.createLineBorder(COR_BORDA, 1, true));
+        scrollLista.getVerticalScrollBar().setUnitIncrement(16);
+        scrollLista.setPreferredSize(new Dimension(0, 500));
+        wrapper.add(scrollLista, BorderLayout.CENTER);
+
+        renderizarAbasELista();
+
+        return wrapper;
+    }
+
+    /**
+     * Reconstrói dinamicamente a barra de abas de filtragem e processa a segregação lógica
+     * dos pedidos com base no estado selecionado, redesenhando a listagem em tempo de execução.
+     */
+    private void renderizarAbasELista() {
+        painelTabs.removeAll();
         String[] filtros = {"Todos", "Novos", "Em Produção", "Prontos"};
-        for (String f : filtros) {
-            BotaoArredondado btn = new BotaoArredondado(f, 20,
-                    f.equals("Todos") ? COR_PRIMARIA : new Color(200, 200, 200), 12);
-            btn.setPreferredSize(new Dimension(90, 30));
-            tabs.add(btn);
-        }
-        wrapper.add(tabs, BorderLayout.NORTH);
 
-        JPanel lista = new JPanel();
-        lista.setLayout(new BoxLayout(lista, BoxLayout.Y_AXIS));
-        lista.setBackground(Color.WHITE);
-        lista.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        for (String f : filtros) {
+            Color bg = f.equals(filtroAtual) ? COR_PRIMARIA : new Color(200, 200, 200);
+            BotaoArredondado btn = new BotaoArredondado(f, 20, bg, 12);
+            btn.setPreferredSize(new Dimension(90, 30));
+            btn.addActionListener(e -> {
+                filtroAtual = f;
+                renderizarAbasELista();
+            });
+            painelTabs.add(btn);
+        }
+        painelTabs.revalidate();
+        painelTabs.repaint();
+
+        painelListaCards.removeAll();
 
         List<Pedido> pedidos = pedidosDoRestaurante();
-        pedidos.sort((a, b) -> {
+        List<Pedido> pedidosFiltrados = new ArrayList<>();
+
+        for (Pedido pd : pedidos) {
+            int st = safeEstado(pd);
+            if (filtroAtual.equals("Todos")) {
+                pedidosFiltrados.add(pd);
+            } else if (filtroAtual.equals("Novos") && st == ESTADO_RECEBIDO) {
+                pedidosFiltrados.add(pd);
+            } else if (filtroAtual.equals("Em Produção") && st == ESTADO_PRODUCAO) {
+                pedidosFiltrados.add(pd);
+            } else if (filtroAtual.equals("Prontos") && st == ESTADO_PRONTO) {
+                pedidosFiltrados.add(pd);
+            }
+        }
+
+        pedidosFiltrados.sort((a, b) -> {
             int ea = safeEstado(a), eb = safeEstado(b);
             if (ea == ESTADO_FINALIZADO && eb != ESTADO_FINALIZADO) return 1;
             if (eb == ESTADO_FINALIZADO && ea != ESTADO_FINALIZADO) return -1;
             return Integer.compare(ea, eb);
         });
 
-        if (pedidos.isEmpty()) {
-            JLabel vazio = new JLabel("Nenhum pedido recebido ainda.");
+        if (pedidosFiltrados.isEmpty()) {
+            JLabel vazio = new JLabel("Nenhum pedido nesta categoria.");
             vazio.setFont(new Font("Arial", Font.ITALIC, 13));
             vazio.setForeground(Color.GRAY);
             vazio.setAlignmentX(Component.CENTER_ALIGNMENT);
-            lista.add(Box.createVerticalStrut(40));
-            lista.add(vazio);
+            painelListaCards.add(Box.createVerticalStrut(40));
+            painelListaCards.add(vazio);
         } else {
-            for (Pedido pd : pedidos) {
-                lista.add(criarCardPedido(pd));
-                lista.add(Box.createVerticalStrut(10));
+            for (Pedido pd : pedidosFiltrados) {
+                painelListaCards.add(criarCardPedido(pd));
+                painelListaCards.add(Box.createVerticalStrut(10));
             }
         }
-
-        JScrollPane scrollLista = new JScrollPane(lista);
-        scrollLista.setBorder(BorderFactory.createLineBorder(COR_BORDA, 1, true));
-        scrollLista.getVerticalScrollBar().setUnitIncrement(16);
-        scrollLista.setPreferredSize(new Dimension(0, 500));
-        wrapper.add(scrollLista, BorderLayout.CENTER);
-
-        return wrapper;
+        painelListaCards.revalidate();
+        painelListaCards.repaint();
     }
 
     /**

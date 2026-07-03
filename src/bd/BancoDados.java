@@ -1159,9 +1159,14 @@ public class BancoDados {
      * @return Lista contendo os pedidos vinculados mapeados.
      */
     public static ArrayList<model.Pedido> obterPedidosPorRestaurante(int idRestaurante) {
-        ArrayList<model.Pedido> lista = new ArrayList<>();
-        String sql = "SELECT id, id_restaurante, id_cliente, id_entregador, status, horario_entrega, data_pedido " +
-                "FROM pedidos WHERE id_restaurante = ?;";
+        java.util.LinkedHashMap<Integer, model.Pedido> map = new java.util.LinkedHashMap<>();
+
+        String sql = "SELECT p.id, p.id_restaurante, p.id_cliente, p.id_entregador, p.status, p.horario_entrega, " +
+                "c.id AS prod_id, c.nome_prato AS prod_nome, c.preco AS prod_preco, ip.quantidade " +
+                "FROM pedidos p " +
+                "LEFT JOIN itens_pedido ip ON p.id = ip.id_pedido " +
+                "LEFT JOIN cardapio c ON ip.id_prato = c.id " +
+                "WHERE p.id_restaurante = ?;";
 
         try (Connection conn = obterConexao();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -1170,23 +1175,40 @@ public class BancoDados {
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    model.Pedido pedido = new model.Pedido();
-                    pedido.setId(rs.getInt("id"));
-                    pedido.setIdRestaurante(rs.getInt("id_restaurante"));
-                    pedido.setIdCliente(rs.getInt("id_cliente"));
-                    pedido.setIdEntregador(rs.getInt("id_entregador"));
-                    pedido.setEstado(rs.getInt("status"));
-                    pedido.setHora_Entregue(rs.getString("horario_entrega"));
+                    int idPedido = rs.getInt("id");
+                    model.Pedido pedido = map.get(idPedido);
 
-                    lista.add(pedido);
+                    if (pedido == null) {
+                        pedido = new model.Pedido();
+                        pedido.setId(idPedido);
+                        pedido.setIdRestaurante(rs.getInt("id_restaurante"));
+                        pedido.setIdCliente(rs.getInt("id_cliente"));
+                        pedido.setIdEntregador(rs.getInt("id_entregador"));
+                        pedido.setEstado(rs.getInt("status"));
+                        pedido.setHora_Entregue(rs.getString("horario_entrega"));
+                        pedido.setComidas(new ArrayList<>());
+                        map.put(idPedido, pedido);
+                    }
+
+                    int prodId = rs.getInt("prod_id");
+                    if (prodId > 0) {
+                        model.Produto produto = new model.Produto();
+                        produto.setCodigo(prodId);
+                        produto.setNome(rs.getString("prod_nome"));
+                        produto.setPreco(rs.getDouble("prod_preco"));
+
+                        int quantidade = rs.getInt("quantidade");
+                        for (int i = 0; i < quantidade; i++) {
+                            pedido.getComidas().add(produto);
+                        }
+                    }
                 }
             }
         } catch (SQLException e) {
             System.err.println("[BD] Erro ao obter pedidos do restaurante #" + idRestaurante + ": " + e.getMessage());
         }
 
-        System.out.println("[BD INFO] Pedidos encontrados para o restaurante " + idRestaurante + ": " + lista.size());
-        return lista;
+        return new ArrayList<>(map.values());
     }
 
     /**
