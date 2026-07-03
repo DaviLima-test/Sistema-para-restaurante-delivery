@@ -218,6 +218,9 @@ public abstract class TelaMenu extends JPanel {
                 sist.configuraTela(tp);
             });
         }
+        if ("admin".equals(Login.GetTipo()) || "admin_master".equals(Login.GetTipo())) {
+            adicionarItemMenu("Painel Admin", e -> sist.configuraTela(new TelaAdminPrincipal(sist)));
+        }
         adicionarItemMenu("Sair", e -> {
             Object[] opcoes = {"Sim", "Não"};
             int resposta = JOptionPane.showOptionDialog(

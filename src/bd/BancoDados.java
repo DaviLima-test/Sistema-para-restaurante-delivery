@@ -115,7 +115,7 @@ public class BancoDados {
     }
 
     public static void inicializarBanco() {
-        //DeletarBancodados();
+        DeletarBancodados();
         String sqlCriarBanco = "CREATE DATABASE IF NOT EXISTS sistema_delivery";
 
         String sqlTabelaUsuarios = "CREATE TABLE IF NOT EXISTS usuarios (" +
@@ -124,7 +124,8 @@ public class BancoDados {
                 "email VARCHAR(255) UNIQUE NOT NULL, " +
                 "senha VARCHAR(255) NOT NULL," +
                 "tipo VARCHAR(255) NOT NULL," +
-                "localizacao VARCHAR(255) NOT NULL"+
+                "localizacao VARCHAR(255) NOT NULL,"+
+                "banido TINYINT DEFAULT 0" +
                 ");";
 
         String sqlTabelCarteira = "CREATE TABLE IF NOT EXISTS cartoes (" +
@@ -222,6 +223,12 @@ public class BancoDados {
             stmt.execute(sqlTabelaPedidos);
             stmt.execute(sqlTabelCarteira);
             stmt.execute(sqlTabelaItensPedidos);
+
+            // Garante que sempre exista o admin master (predefinido pelo sistema, login: "admin" / senha: "123")
+            String sqlAdminMaster = "INSERT IGNORE INTO usuarios (nome, email, senha, tipo, localizacao, banido) " +
+                    "VALUES ('Admin', 'admin', '123', 'admin_master', 'Sede AIFood', 0);";
+            stmt.execute(sqlAdminMaster);
+
             // ALTERADO: Adicionado um campo NULL a mais para a nova coluna no INSERT IGNORE
             String sqlInsertInicial = "INSERT IGNORE INTO cookie (id, logado, nome_usuario, email_usuario, tipo_usuario, localizacao_usuario) VALUES (1, 0, NULL, NULL, NULL, NULL);";
             stmt.execute(sqlInsertInicial);
@@ -262,7 +269,7 @@ public class BancoDados {
     // ALTERADO: Agora busca também a 'localizacao' e passa para o método do cookie
 
     public static boolean realizarLogin(String email, String senha) {
-        String sqlBuscar = "SELECT nome, tipo, localizacao FROM usuarios WHERE email = ? AND senha = ?;";
+        String sqlBuscar = "SELECT nome, tipo, localizacao, banido FROM usuarios WHERE email = ? AND senha = ?;";
 
         try (Connection conn = obterConexao();
              PreparedStatement pstmt = conn.prepareStatement(sqlBuscar)) {
@@ -272,6 +279,10 @@ public class BancoDados {
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
+                    if (rs.getBoolean("banido")) {
+                        System.out.println("Conta banida. Login recusado para: " + email);
+                        return false;
+                    }
                     String nomeUsuario = rs.getString("nome");
                     String tipoUsuario = rs.getString("tipo");
                     String localizacaoUsuario = rs.getString("localizacao"); // Captura a localização
@@ -1037,6 +1048,164 @@ public class BancoDados {
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("[BD] Erro ao cancelar pedido: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  PAINEL ADMINISTRATIVO
+    // ─────────────────────────────────────────────────────────
+
+    /** Conta quantos usuários existem de um determinado tipo (cliente, restaurante, entregador, admin, admin_master). */
+    public static int contarUsuariosPorTipo(String tipo) {
+        String sql = "SELECT COUNT(*) AS total FROM usuarios WHERE tipo = ?;";
+        try (Connection conn = obterConexao();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, tipo);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) return rs.getInt("total");
+            }
+        } catch (SQLException e) {
+            System.err.println("[BD] Erro ao contar usuários por tipo: " + e.getMessage());
+        }
+        return 0;
+    }
+
+    /** Quantidade de admins, somando 'admin' (padrão) e 'admin_master'. */
+    public static int contarTotalAdmins() {
+        return contarUsuariosPorTipo("admin") + contarUsuariosPorTipo("admin_master");
+    }
+
+    /** Quantidade de restaurantes efetivamente cadastrados na tabela 'restaurante'. */
+    public static int contarTotalRestaurantesCadastrados() {
+        String sql = "SELECT COUNT(*) AS total FROM restaurante;";
+        try (Connection conn = obterConexao();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) return rs.getInt("total");
+        } catch (SQLException e) {
+            System.err.println("[BD] Erro ao contar restaurantes: " + e.getMessage());
+        }
+        return 0;
+    }
+
+    /** Quantidade total de pedidos já realizados na plataforma. */
+    public static int contarTotalPedidos() {
+        String sql = "SELECT COUNT(*) AS total FROM pedidos;";
+        try (Connection conn = obterConexao();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) return rs.getInt("total");
+        } catch (SQLException e) {
+            System.err.println("[BD] Erro ao contar pedidos: " + e.getMessage());
+        }
+        return 0;
+    }
+
+    /** Soma (preço do prato × quantidade) de todos os itens já pedidos na plataforma. */
+    public static double calcularFaturamentoTotal() {
+        String sql = "SELECT COALESCE(SUM(c.preco * ip.quantidade), 0) AS total " +
+                "FROM itens_pedido ip JOIN cardapio c ON ip.id_prato = c.id;";
+        try (Connection conn = obterConexao();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) return rs.getDouble("total");
+        } catch (SQLException e) {
+            System.err.println("[BD] Erro ao calcular faturamento: " + e.getMessage());
+        }
+        return 0.0;
+    }
+
+    /** Representa uma linha de usuário para as telas de moderação do admin. */
+    public static class UsuarioAdmin {
+        public final int id;
+        public final String nome;
+        public final String email;
+        public final String localizacao;
+        public final String tipo;
+        public final boolean banido;
+
+        public UsuarioAdmin(int id, String nome, String email, String localizacao, String tipo, boolean banido) {
+            this.id = id;
+            this.nome = nome;
+            this.email = email;
+            this.localizacao = localizacao;
+            this.tipo = tipo;
+            this.banido = banido;
+        }
+    }
+
+    /** Lista todos os usuários de um tipo específico (ex.: "cliente", "restaurante", "entregador", "admin"), mais recentes primeiro. */
+    public static ArrayList<UsuarioAdmin> listarUsuariosPorTipo(String tipo) {
+        ArrayList<UsuarioAdmin> lista = new ArrayList<>();
+        String sql = "SELECT id, nome, email, localizacao, tipo, banido FROM usuarios WHERE tipo = ? ORDER BY id DESC;";
+        try (Connection conn = obterConexao();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, tipo);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    lista.add(new UsuarioAdmin(
+                            rs.getInt("id"),
+                            rs.getString("nome"),
+                            rs.getString("email"),
+                            rs.getString("localizacao"),
+                            rs.getString("tipo"),
+                            rs.getBoolean("banido")
+                    ));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("[BD] Erro ao listar usuários por tipo: " + e.getMessage());
+        }
+        return lista;
+    }
+
+    /** Bane ou desbane um usuário (contas banidas não conseguem mais fazer login). */
+    public static boolean definirBanimento(int idUsuario, boolean banir) {
+        String sql = "UPDATE usuarios SET banido = ? WHERE id = ?;";
+        try (Connection conn = obterConexao();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setBoolean(1, banir);
+            pstmt.setInt(2, idUsuario);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("[BD] Erro ao (des)banir usuário: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /** Cria do zero um novo administrador padrão (usado pelo admin master). */
+    public static boolean criarNovoAdmin(String nome, String email, String senha) {
+        return cadastrarUsuario(nome, email, senha, "admin", "-");
+    }
+
+    /**
+     * Promove uma conta já existente (cliente, restaurante ou entregador) a
+     * administrador padrão, sem precisar criar um cadastro novo.
+     * Usado pelo admin master a partir da tela de moderação.
+     */
+    public static boolean promoverParaAdmin(int idUsuario) {
+        String sql = "UPDATE usuarios SET tipo = 'admin' WHERE id = ? AND tipo <> 'admin_master';";
+        try (Connection conn = obterConexao();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, idUsuario);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("[BD] Erro ao promover usuário a admin: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /** Rebaixa um administrador padrão de volta para um tipo comum (ex.: cliente). Não afeta o admin master. */
+    public static boolean rebaixarAdmin(int idUsuario, String novoTipo) {
+        String sql = "UPDATE usuarios SET tipo = ? WHERE id = ? AND tipo = 'admin';";
+        try (Connection conn = obterConexao();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, novoTipo);
+            pstmt.setInt(2, idUsuario);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("[BD] Erro ao rebaixar admin: " + e.getMessage());
             return false;
         }
     }
