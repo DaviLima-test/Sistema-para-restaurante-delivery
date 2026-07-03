@@ -1,22 +1,23 @@
 package view;
 
+import model.Login;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
 import java.io.File;
-import java.net.URL;
-
+import java.util.Objects;
+import util.*;
 public class Telabase extends JFrame {
-    protected static int Width;
-    protected static int Height;
+    public static int Width;
+    public static int Height;
     private int raioDoArredondamento;
-
+    private static Login login;
     public Telabase(){
         setTitle("AiFome");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
+        setLayout(new BorderLayout());
         Width = Toolkit.getDefaultToolkit().getScreenSize().width;
         Height = Toolkit.getDefaultToolkit().getScreenSize().height;
         setSize(Width,Height);
@@ -41,7 +42,8 @@ public class Telabase extends JFrame {
     public void configuraTela(JPanel panel){
 
         getContentPane().removeAll();
-        getContentPane().add(panel);
+        getContentPane().add(panel, BorderLayout.CENTER);
+        RemoveEmoji.aplicar(panel); // remove emojis de botoes e labels se o SO for Windows
         revalidate();
         repaint();
 
@@ -60,6 +62,14 @@ public class Telabase extends JFrame {
         botao.setContentAreaFilled(true);
 
     }
+
+    public static Login getLogin() {
+        return Telabase.login;
+    }
+
+    public static void setLogin(Login login) {
+        Telabase.login = login;
+    }
 }
 class BotaoArredondado extends JButton {
     private int raioDoArredondamento;
@@ -71,6 +81,7 @@ class BotaoArredondado extends JButton {
         setBackground(cor);
         setForeground(Color.WHITE);             // Texto Branco
         setFont(new Font("Arial", Font.BOLD, tam));
+        setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         setContentAreaFilled(false);
         setFocusPainted(false);
@@ -184,36 +195,37 @@ class CampoSenhaArredondado extends JPasswordField {
     }
 }
 class PainelFormulario extends JPanel {
+    private int  Width;
+    private int Heigth;
+    private Color cor;
+    public PainelFormulario(int Width,int Heigth,Color cor) {
 
-    public PainelFormulario() {
-        // Define o layout vertical para as opções
+        this.Width = Width;
+        this.Heigth = Heigth;
+        this.cor = cor;
         setLayout(new GridBagLayout());
 
-        // Torna o painel transparente para o fundo da janela aparecer nas bordas externos do retângulo
+
         setOpaque(false);
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
-        // Ativa o antialiasing para as bordas do retângulo ficarem suaves
+
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Define a margem (espaço) entre a borda da tela e o retângulo branco
+
         int margem = 50;
 
         int x = margem;
         int y = margem;
-        int largura = getWidth() - (margem * 2);
-        int altura = getHeight() - (margem * 2) ;
-        int raioCurva = 25; // Define o quão arredondado será o retângulo
-
-        // 1. Desenha a sombra ou preenchimento do retângulo branco
+        int largura = this.Width - (margem * 2);
+        int altura = this.Heigth - (margem * 2) ;
+        int raioCurva = 25;
         g2.setColor(Color.WHITE);
-        g2.fillRoundRect(x, y, largura, altura, raioCurva, raioCurva);
-
-
-        g2.setColor(new Color(230, 230, 230));
+        g2.setColor(this.cor);
+        g2.fillRoundRect(x,y,largura,altura,raioCurva,raioCurva);
         g2.drawRoundRect(x, y, largura, altura, raioCurva, raioCurva);
 
         g2.dispose();
@@ -294,14 +306,14 @@ class CheckboxCustomizado extends JCheckBox {
 }
 class CardRestaurante extends JPanel {
 
-    public CardRestaurante(String nome, String nota, String tempo, String frete) {
+    public CardRestaurante(String nome, String nota, String avaliacao ,String emj) {
         setLayout(new BorderLayout(15, 0));
         setBackground(Color.WHITE);
         setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // Define uma altura fixa para o card e largura flexível
-        setPreferredSize(new Dimension(320, 80)); // Largura fixa de 320px para caber vários na tela lateralmente
-        setMaximumSize(new Dimension(320, 80));
+        setPreferredSize(new Dimension(400, 80)); // Largura fixa de 320px para caber vários na tela lateralmente
+        setMaximumSize(new Dimension(400, 80));
 
         // Borda suave ao redor do card para parecer um bloco separado
         setBorder(BorderFactory.createCompoundBorder(
@@ -310,7 +322,7 @@ class CardRestaurante extends JPanel {
         ));
 
         // 1. "FOTO" DO RESTAURANTE (Substituída por um quadrado cinza arredondado/ícone)
-        JPanel fotoPlaceholder = new JPanel() {
+        JPanel emoji = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -320,8 +332,12 @@ class CardRestaurante extends JPanel {
                 g2.dispose();
             }
         };
-        fotoPlaceholder.setPreferredSize(new Dimension(60, 60));
-        add(fotoPlaceholder, BorderLayout.WEST);
+        emoji.setPreferredSize(new Dimension(60, 60));
+        add(emoji, BorderLayout.WEST);
+
+        JLabel lblEmoji = new JLabel(emj);
+        lblEmoji.setFont(new Font("Arial",Font.PLAIN,28));
+        emoji.add(lblEmoji);
 
         // 2. INFORMAÇÕES (Nome, Nota, Tempo)
         JPanel infos = new JPanel(new GridLayout(2, 1, 0, 5));
@@ -330,8 +346,17 @@ class CardRestaurante extends JPanel {
         JLabel lblNome = new JLabel(nome);
         lblNome.setFont(new Font("Arial", Font.BOLD, 16));
 
+
         // Detalhes em cinza (Nota, Tempo, Frete) igual ao app
-        JLabel lblDetalhes = new JLabel("⭐ " + nota + " • " + tempo + " • " + frete);
+        JLabel lblDetalhes;
+        if(Objects.equals(emj, "🏪")) {
+            int numNota = Integer.parseInt(avaliacao);
+            avaliacao = "⭐".repeat(numNota);
+            lblDetalhes = new JLabel("⭐ " + nota + " • " +avaliacao );
+        }else{
+            lblDetalhes = new JLabel("R$" + nota + " • " + avaliacao);
+        }
+
         lblDetalhes.setFont(new Font("Arial", Font.PLAIN, 13));
         lblDetalhes.setForeground(Color.GRAY);
 
@@ -342,5 +367,28 @@ class CardRestaurante extends JPanel {
 
         // Transforma o card todo em um botão clicável visualmente
         setCursor(new Cursor(Cursor.HAND_CURSOR));
+    }
+
+
+}
+class Overlay extends JPanel {
+
+    public Overlay() {
+        setOpaque(false);
+        setVisible(false);
+        // Bloqueia cliques do mouse no resto do cinza para o usuário não clicar no feed sem querer
+        //addMouseListener(new MouseAdapter() {});
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        Graphics2D g2 = (Graphics2D) g.create();
+
+
+        g2.setColor(new Color(40, 40, 40, 160));
+        g2.fillRect(0, 0, getWidth(), getHeight());
+
+        g2.dispose();
     }
 }
