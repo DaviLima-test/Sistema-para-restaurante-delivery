@@ -15,6 +15,9 @@ public abstract class TelaMenu extends JPanel {
     private JPanel conteudoInterno;   // O conteúdo específico que a classe filha vai injetar
     protected Telabase sist;
 
+    private static final String PLACEHOLDER_BUSCA = " Buscar Restaurantes e pratos ...";
+    private CampoTextoArredondado campoBusca;
+
     public TelaMenu(Telabase sist) {
         this.sist = sist;
         setLayout(new BorderLayout());
@@ -125,31 +128,53 @@ public abstract class TelaMenu extends JPanel {
         gbc.gridx = 1;
         p.add(logo, gbc);
 
-        CampoTextoArredondado busca = new CampoTextoArredondado(18, 15, new Color(240, 240, 240), 30);
-        busca.setText(" Buscar Restaurantes e pratos ...");
-        busca.setForeground(Color.GRAY);
+        campoBusca = new CampoTextoArredondado(18, 15, new Color(240, 240, 240), 30);
+        campoBusca.setText(PLACEHOLDER_BUSCA);
+        campoBusca.setForeground(Color.GRAY);
         gbc.gridx = 2;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        busca.addFocusListener(new FocusListener() {
+        campoBusca.addFocusListener(new FocusListener() {
             @Override
             public void focusGained(FocusEvent e) {
-                if (busca.getText().equals(" Buscar Restaurantes e pratos ...")) {
-                    busca.setText("");
+                if (campoBusca.getText().equals(PLACEHOLDER_BUSCA)) {
+                    campoBusca.setText("");
+                    campoBusca.setForeground(Color.BLACK);
                 }
             }
 
             @Override
             public void focusLost(FocusEvent e) {
-                if (busca.getText().isEmpty()) {
-                    busca.setText(" Buscar Restaurantes e pratos ...");
+                if (campoBusca.getText().isEmpty()) {
+                    campoBusca.setForeground(Color.GRAY);
+                    campoBusca.setText(PLACEHOLDER_BUSCA);
+                    aoBuscar("");
                 }
             }
         });
 
-        p.add(busca, gbc);
+        campoBusca.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                String texto = campoBusca.getText();
+                if (texto.equals(PLACEHOLDER_BUSCA)) texto = "";
+                aoBuscar(texto.trim());
+            }
+        });
+
+        p.add(campoBusca, gbc);
         return p;
+    }
+
+    /**
+     * Ponto de extensão chamado sempre que o texto da barra de pesquisa muda.
+     * Cada tela filha que exibe uma lista pesquisável (ex.: TelaPrincipal)
+     * deve sobrescrever este método para filtrar seu próprio conteúdo.
+     */
+    protected void aoBuscar(String texto) {
+        // Implementação padrão vazia: telas que não possuem lista pesquisável
+        // simplesmente ignoram a busca.
     }
 
     protected void setConteudoInterno(JPanel painelFilho) {

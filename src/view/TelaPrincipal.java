@@ -17,6 +17,12 @@ public class TelaPrincipal extends TelaMenu {
     private JPanel painelDinamico;
     private int estado = 1;
 
+    private final ArrayList<Restaurante> todosRestaurantes = new ArrayList<>();
+    private final ArrayList<Produto> todosCardapios = new ArrayList<>();
+    private JPanel listaVerticalRestaurantes;
+    private JPanel listaVerticalCardapio;
+    private String filtroAtual = "";
+
     public TelaPrincipal(Telabase sist) {
         super(sist);
         JPanel meuFeed = new JPanel(new GridBagLayout());
@@ -118,66 +124,16 @@ public class TelaPrincipal extends TelaMenu {
         gbc.insets = new Insets(0, 0, 15, 0);
         panel.add(titulo, gbc);
 
-        JPanel listaVertical = new JPanel(new GridBagLayout());
-        listaVertical.setBackground(Color.WHITE);
+        listaVerticalRestaurantes = new JPanel(new GridBagLayout());
+        listaVerticalRestaurantes.setBackground(Color.WHITE);
 
-        GridBagConstraints gbcCards = new GridBagConstraints();
-        gbcCards.insets = new Insets(10, 10, 10, 10);
-        gbcCards.anchor = GridBagConstraints.NORTHWEST;
-        gbcCards.fill = GridBagConstraints.NONE;
-        gbcCards.weightx = 0;
-        gbcCards.weighty = 0;
+        todosRestaurantes.clear();
+        todosRestaurantes.addAll(BancoDados.getRestaurantes());
 
-        int coluna = 0;
-        int linha = 0;
-
-        ArrayList<Restaurante> restaurantes = BancoDados.getRestaurantes();
-
-        for (Restaurante re : restaurantes) {
-
-            CardRestaurante cdr = new CardRestaurante(
-                    re.getNome(),
-                    re.getLocalizacao(),
-                    String.valueOf(re.getEstrelas()),
-                    "🏪"
-            );
-
-            cdr.addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    TelaFazerPedido tfp = new TelaFazerPedido(sist, re.getId());
-                    sist.configuraTela(tfp);
-                }
-            });
-
-            gbcCards.gridx = coluna;
-            gbcCards.gridy = linha;
-
-            listaVertical.add(cdr, gbcCards);
-
-            coluna++;
-
-            if (coluna == 4) {
-                coluna = 0;
-                linha++;
-            }
-        }
-
-        // Empurra tudo para o canto superior esquerdo
-        JPanel filler = new JPanel();
-        filler.setOpaque(false);
-
-        gbcCards.gridx = 0;
-        gbcCards.gridy = linha + 1;
-        gbcCards.gridwidth = 4;
-        gbcCards.weightx = 1;
-        gbcCards.weighty = 1;
-        gbcCards.fill = GridBagConstraints.BOTH;
-
-        listaVertical.add(filler, gbcCards);
+        popularRestaurantes(filtroAtual);
 
         JScrollPane scrollVertical = new JScrollPane(
-                listaVertical,
+                listaVerticalRestaurantes,
                 JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
                 JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
         );
@@ -198,6 +154,75 @@ public class TelaPrincipal extends TelaMenu {
         return panel;
     }
 
+    /** Repopula o grid de restaurantes filtrando pelo nome ou localização. */
+    private void popularRestaurantes(String filtro) {
+        if (listaVerticalRestaurantes == null) return;
+
+        listaVerticalRestaurantes.removeAll();
+
+        GridBagConstraints gbcCards = new GridBagConstraints();
+        gbcCards.insets = new Insets(10, 10, 10, 10);
+        gbcCards.anchor = GridBagConstraints.NORTHWEST;
+        gbcCards.fill = GridBagConstraints.NONE;
+        gbcCards.weightx = 0;
+        gbcCards.weighty = 0;
+
+        String busca = filtro == null ? "" : filtro.toLowerCase();
+        int coluna = 0;
+        int linha = 0;
+
+        for (Restaurante re : todosRestaurantes) {
+            boolean corresponde = busca.isEmpty()
+                    || re.getNome().toLowerCase().contains(busca)
+                    || (re.getLocalizacao() != null && re.getLocalizacao().toLowerCase().contains(busca));
+
+            if (!corresponde) continue;
+
+            CardRestaurante cdr = new CardRestaurante(
+                    re.getNome(),
+                    re.getLocalizacao(),
+                    String.valueOf(re.getEstrelas()),
+                    "🏪"
+            );
+
+            cdr.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    TelaFazerPedido tfp = new TelaFazerPedido(sist, re.getId());
+                    sist.configuraTela(tfp);
+                }
+            });
+
+            gbcCards.gridx = coluna;
+            gbcCards.gridy = linha;
+
+            listaVerticalRestaurantes.add(cdr, gbcCards);
+
+            coluna++;
+
+            if (coluna == 4) {
+                coluna = 0;
+                linha++;
+            }
+        }
+
+        // Empurra tudo para o canto superior esquerdo
+        JPanel filler = new JPanel();
+        filler.setOpaque(false);
+
+        gbcCards.gridx = 0;
+        gbcCards.gridy = linha + 1;
+        gbcCards.gridwidth = 4;
+        gbcCards.weightx = 1;
+        gbcCards.weighty = 1;
+        gbcCards.fill = GridBagConstraints.BOTH;
+
+        listaVerticalRestaurantes.add(filler, gbcCards);
+
+        listaVerticalRestaurantes.revalidate();
+        listaVerticalRestaurantes.repaint();
+    }
+
     private JPanel criarListaCardapio() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(Color.WHITE);
@@ -214,8 +239,41 @@ public class TelaPrincipal extends TelaMenu {
         gbc.insets = new Insets(0, 0, 15, 0);
         panel.add(titulo, gbc);
 
-        JPanel listaVertical = new JPanel(new GridBagLayout());
-        listaVertical.setBackground(Color.WHITE);
+        listaVerticalCardapio = new JPanel(new GridBagLayout());
+        listaVerticalCardapio.setBackground(Color.WHITE);
+
+        todosCardapios.clear();
+        todosCardapios.addAll(BancoDados.getPratos());
+
+        popularCardapio(filtroAtual);
+
+        JScrollPane scrollVertical = new JScrollPane(
+                listaVerticalCardapio,
+                JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
+                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
+        );
+
+        scrollVertical.setBorder(null);
+        scrollVertical.setOpaque(false);
+        scrollVertical.getViewport().setOpaque(false);
+        scrollVertical.getVerticalScrollBar().setUnitIncrement(20);
+
+        Dimension tamanhoScroll = new Dimension(900, 500);
+        scrollVertical.setPreferredSize(tamanhoScroll);
+        scrollVertical.setMinimumSize(tamanhoScroll);
+
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        panel.add(scrollVertical, gbc);
+
+        return panel;
+    }
+
+    /** Repopula o grid de pratos filtrando pelo nome do prato ou do restaurante. */
+    private void popularCardapio(String filtro) {
+        if (listaVerticalCardapio == null) return;
+
+        listaVerticalCardapio.removeAll();
 
         GridBagConstraints gbcCards = new GridBagConstraints();
         gbcCards.insets = new Insets(10, 10, 10, 10);
@@ -224,12 +282,16 @@ public class TelaPrincipal extends TelaMenu {
         gbcCards.weightx = 0;
         gbcCards.weighty = 0;
 
+        String busca = filtro == null ? "" : filtro.toLowerCase();
         int coluna = 0;
         int linha = 0;
 
-        ArrayList<Produto> cardapios = BancoDados.getPratos();
+        for (Produto prat : todosCardapios) {
+            boolean corresponde = busca.isEmpty()
+                    || prat.getNome().toLowerCase().contains(busca)
+                    || (prat.getRestaurante() != null && prat.getRestaurante().getNome().toLowerCase().contains(busca));
 
-        for (Produto prat : cardapios) {
+            if (!corresponde) continue;
 
             CardRestaurante cdr = new CardRestaurante(
                     prat.getNome(),
@@ -255,7 +317,7 @@ public class TelaPrincipal extends TelaMenu {
             gbcCards.gridx = coluna;
             gbcCards.gridy = linha;
 
-            listaVertical.add(cdr, gbcCards);
+            listaVerticalCardapio.add(cdr, gbcCards);
 
             coluna++;
 
@@ -276,27 +338,21 @@ public class TelaPrincipal extends TelaMenu {
         gbcCards.weighty = 1;
         gbcCards.fill = GridBagConstraints.BOTH;
 
-        listaVertical.add(filler, gbcCards);
+        listaVerticalCardapio.add(filler, gbcCards);
 
-        JScrollPane scrollVertical = new JScrollPane(
-                listaVertical,
-                JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
-                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
-        );
+        listaVerticalCardapio.revalidate();
+        listaVerticalCardapio.repaint();
+    }
 
-        scrollVertical.setBorder(null);
-        scrollVertical.setOpaque(false);
-        scrollVertical.getViewport().setOpaque(false);
-        scrollVertical.getVerticalScrollBar().setUnitIncrement(20);
-
-        Dimension tamanhoScroll = new Dimension(900, 500);
-        scrollVertical.setPreferredSize(tamanhoScroll);
-        scrollVertical.setMinimumSize(tamanhoScroll);
-
-        gbc.gridy = 1;
-        gbc.insets = new Insets(0, 0, 0, 0);
-        panel.add(scrollVertical, gbc);
-
-        return panel;
+    /**
+     * Chamado pela barra de pesquisa do cabeçalho (TelaMenu) sempre que o
+     * usuário digita. Filtra tanto a lista de restaurantes quanto a de
+     * pratos, para que a busca funcione independentemente da aba ativa.
+     */
+    @Override
+    protected void aoBuscar(String texto) {
+        filtroAtual = texto == null ? "" : texto;
+        popularRestaurantes(filtroAtual);
+        popularCardapio(filtroAtual);
     }
 }
